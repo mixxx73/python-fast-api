@@ -1,7 +1,4 @@
-# comming soon....
-
 ## python-fast-api
-
 
 
 ## Docker
@@ -13,13 +10,20 @@ docker-compose up
 
 ## create venv
 
+preparation:
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
-
-
+pip install -r requirements.txt
 ```
 
+run:
+```bash
+source .venv/bin/activate
+fastapi dev main.py
+```
 
+You should see:
 
-... this is ditry scratchy version for now....
+Server started at http://127.0.0.1:8000
+Documentation at http://127.0.0.1:8000/docs
+
