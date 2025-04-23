@@ -1,3 +1,4 @@
 fastapi[standard]==0.113
 motor==3.7
 pydantic==2.11
+pydantic-settings==2.9

@@ -24,6 +24,6 @@ fastapi dev main.py
 
 You should see:
 
-Server started at http://127.0.0.1:8000
-Documentation at http://127.0.0.1:8000/docs
+* Server started at http://127.0.0.1:8000
+* Documentation at http://127.0.0.1:8000/docs
 

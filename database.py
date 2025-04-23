@@ -1,27 +1,23 @@
 import motor.motor_asyncio
 from uuid import UUID
 from bson.codec_options import CodecOptions, UuidRepresentation
-
-MONGODB_URL = "mongodb://localhost:27017"
-MONGODB_DB_NAME = "contacts_assets_db"
-MONGODB_CONTACTS_COLLECTION = "contacts"
-MONGODB_ASSETS_COLLECTION = "assets"
+from config import settings
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
-    MONGODB_URL,
+    settings.mongodb_url,
     uuidRepresentation='standard' # Important for handling UUIDs correctly
 )
 
-db = client[MONGODB_DB_NAME]
+db = client[settings.mongodb_db_name]
 
 uuid_codec_options = CodecOptions(uuid_representation=UuidRepresentation.STANDARD)
 
 contacts_collection = db.get_collection(
-    MONGODB_CONTACTS_COLLECTION,
+    settings.mongodb_contacts_collection,
     codec_options=uuid_codec_options
 )
 assets_collection = db.get_collection(
-    MONGODB_ASSETS_COLLECTION,
+    settings.mongodb_assets_collection,
     codec_options=uuid_codec_options
 )
 
