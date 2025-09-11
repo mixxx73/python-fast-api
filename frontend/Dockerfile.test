@@ -1,0 +1,13 @@
+FROM node:20-alpine AS test
+WORKDIR /app/frontend
+
+# Copy only the frontend project
+COPY frontend/package*.json ./
+RUN npm ci || npm install
+
+# Copy the rest of the frontend sources
+COPY frontend .
+
+# Run tests (build:test is invoked by the script)
+CMD ["npm", "test"]
+

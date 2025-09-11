@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist-tests",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "declaration": false,
+    "sourceMap": false,
+    "jsx": "react-jsx",
+    "paths": {
+      "@client": ["tests/stubs/client"],
+      "@client/*": ["tests/stubs/*"]
+    }
+  },
+  "include": ["src/ui/**/*"]
+}

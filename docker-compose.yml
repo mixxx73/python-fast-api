@@ -1,9 +1,142 @@
-version: "3"
-
 services:
-  mongodb:
-    image: mongo:latest
+  db:
+    image: postgres:16-alpine
     environment:
-      - MONGODB_DATABASE="test"
+      POSTGRES_USER: app
+      POSTGRES_DB: app
     ports:
-      - 27017:27017
+      - "15432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      # Override if needed; defaults set in image
+      DB_DIALECT: postgresql+psycopg2
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: app
+      DB_NAME: app
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: expense-backend
+      OTEL_ENVIRONMENT: dev
+      PYTHONPATH: /app
+      SECRET_KEY_FILE: /run/secrets/jwt_secret
+    depends_on:
+      db:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - ./backend/migrations:/app/migrations
+    secrets:
+      - jwt_secret
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "8080:80"
+    # Static content only; no volume mounts required
+    develop:
+      watch:
+        # Rebuild and restart the frontend image when app code changes
+        - path: ./frontend
+          action: rebuild
+        # Rebuild when the shared client library used by the frontend changes
+        - path: ./client
+          action: rebuild
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"   # UI
+      - "4317:4317"     # OTLP gRPC
+    # No profile so it always runs alongside backend for tracing
+
+  frontend-tests:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.test
+    # No dependency on backend; tests rely on stubs and SSR only
+    profiles: ["dev", "test"]
+    command: ["npm", "test"]
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - ./client:/app/client:ro
+
+  lint:
+    image: python:3.12-slim
+    profiles: ["dev"]
+    working_dir: /workspace/backend
+    volumes:
+      - ./:/workspace:ro
+    command: >-
+      sh -lc "pip install --no-cache-dir flake8 &&
+      flake8 --config=../.flake8 app tests"
+
+  lint-fix:
+    image: python:3.12-slim
+    profiles: ["dev"]
+    working_dir: /workspace/backend
+    volumes:
+      - ./:/workspace
+    command: >-
+      sh -lc "pip install --no-cache-dir ruff black isort &&
+      ruff check --config pyproject.toml --fix app tests &&
+      isort app tests &&
+      black app tests"
+
+  frontend-lint:
+    image: node:20-alpine
+    profiles: ["dev"]
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - ./client:/app/client:ro
+      - frontend_node_modules:/app/frontend/node_modules
+    command: >-
+      sh -lc "npm ci || npm i && npm run lint"
+
+  frontend-lint-fix:
+    image: node:20-alpine
+    profiles: ["dev"]
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - ./client:/app/client
+      - frontend_node_modules:/app/frontend/node_modules
+    command: >-
+      sh -lc "npm ci || npm i && npm run lint:fix && npm run format"
+
+    secrets:
+      - db_password
+volumes:
+  db_data:
+  frontend_node_modules:
+secrets:
+  jwt_secret:
+    file: ./infra/secrets/jwt_secret
+  db_password:
+    file: ./infra/secrets/db_password
