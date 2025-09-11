@@ -4,8 +4,12 @@ from uuid import uuid4
 def _signup_and_token(
     client, email="bal_tester@example.com", name="Owner", password="s3cret"
 ):
+    # ensure uniqueness to avoid 409 on duplicate email across tests
+    local, at, domain = email.partition("@")
+    unique_email = f"{local}+{uuid4().hex}@{domain}" if at else f"{email}+{uuid4().hex}"
     r = client.post(
-        "/auth/signup", json={"email": email, "name": name, "password": password}
+        "/auth/signup",
+        json={"email": unique_email, "name": name, "password": password},
     )
     assert r.status_code == 200
     return r.json()["access_token"]
