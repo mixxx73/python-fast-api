@@ -1,0 +1,6 @@
+dist
+dist-tests
+node_modules
+*.config.*
+vite.config.ts
+tests/stubs

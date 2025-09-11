@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+set -eu
+
+echo "Running backend lint (flake8 via compose)..."
+# Disable TTY allocation (-T) so it works in non-interactive Git hooks
+if ! docker compose --profile dev run --rm -T lint; then
+  echo "Backend lint errors. Attempting auto-fix (ruff/isort/black)..."
+  if docker compose --profile dev run --rm -T lint-fix; then
+    echo "Backend auto-fix applied. Re-staging changes..."
+    git add -A
+  else
+    echo "Backend auto-fix failed. Run 'make lint-fix' and retry."
+    exit 1
+  fi
+fi
+
+echo "Running frontend lint (eslint via compose)..."
+if ! docker compose --profile dev run --rm -T frontend-lint; then
+  echo "Frontend lint errors. Attempting auto-fix (eslint --fix + prettier)..."
+  if docker compose --profile dev run --rm -T frontend-lint-fix; then
+    echo "Frontend auto-fix applied. Re-staging changes..."
+    git add -A
+  else
+    echo "Frontend auto-fix failed. Run 'make frontend-lint-fix' and retry."
+    exit 1
+  fi
+fi
+
+echo "All lint checks passed."
