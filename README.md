@@ -1,3 +1,5 @@
+# Note, this whole project has been done in 3 hours
+
 # Expense Settlement Service
 
 [![CI](https://github.com/mixxx73/ai-work-i1/actions/workflows/ci.yml/badge.svg)](https://github.com/mixxx73/ai-work-i1/actions/workflows/ci.yml)
