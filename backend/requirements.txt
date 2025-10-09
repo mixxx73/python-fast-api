@@ -5,6 +5,7 @@ sqlalchemy
 psycopg2-binary
 alembic
 passlib[bcrypt]
+bcrypt==3.2.2
 PyJWT
 pytest
 pytest-cov

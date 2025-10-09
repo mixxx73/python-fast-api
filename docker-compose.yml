@@ -4,6 +4,7 @@ services:
     environment:
       POSTGRES_USER: app
       POSTGRES_DB: app
+      POSTGRES_PASSWORD: app
     ports:
       - "15432:5432"
     healthcheck:
