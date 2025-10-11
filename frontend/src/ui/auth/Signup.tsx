@@ -17,17 +17,25 @@ export const Signup: React.FC<{ onSwitchToLogin?: () => void }> = ({ onSwitchToL
 
   const validate = () => {
     const errs: { name?: string; email?: string; password?: string } = {};
-    if (!name.trim()) errs.name = 'Name is required';
+    if (!name.trim()) {
+      errs.name = 'Name is required';
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) errs.email = 'Enter a valid email';
-    if (password.length < 8) errs.password = 'Password must be at least 8 characters';
+    if (!emailRegex.test(email)) {
+      errs.email = 'Enter a valid email';
+    }
+    if (password.length < 8) {
+      errs.password = 'Password must be at least 8 characters';
+    }
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

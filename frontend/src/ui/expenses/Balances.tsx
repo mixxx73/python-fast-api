@@ -15,8 +15,12 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
   React.useEffect(() => {
     try {
       const v = localStorage.getItem('expense_bal_mode');
-      if (v === 'group') setRelativeMode(false);
-      else if (v === 'relative') setRelativeMode(true);
+      if (v === 'group') {
+          setRelativeMode(false);
+      } else if (v === 'relative'){
+
+        setRelativeMode(true);
+        }
     } catch {}
   }, []);
   React.useEffect(() => {
@@ -26,29 +30,44 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
   }, [relativeMode]);
 
   const totals = React.useMemo(() => {
-    if (!balances || !me) return null;
+    if (!balances || !me) {
+        return null;
+    }
     const meBal = balances.find((b) => b.user_id === me.id)?.balance || 0;
-    if (meBal === 0) return { pos: 0, neg: 0 };
+
+    if (meBal === 0) {
+        return { pos: 0, neg: 0 };
+    }
     const pos = meBal > 0 ? Math.round(meBal * 100) / 100 : 0;
     const neg = meBal < 0 ? Math.round(-meBal * 100) / 100 : 0;
     return { pos, neg };
   }, [balances, me]);
 
   const totalsGroup = React.useMemo(() => {
-    if (!balances) return null;
+    if (!balances) {
+        return null;
+    }
+
     let pos = 0;
     let neg = 0;
     for (const b of balances) {
-      if (b.balance > 0) pos += b.balance;
-      else if (b.balance < 0) neg += -b.balance;
+      if (b.balance > 0) {
+        pos += b.balance;
+      } else if (b.balance < 0) {
+        neg += -b.balance;
+      }
     }
+
     pos = Math.round(pos * 100) / 100;
     neg = Math.round(neg * 100) / 100;
+
     return { pos, neg };
   }, [balances]);
 
   const relativeBalances = React.useMemo(() => {
-    if (!balances || !me) return null as Map<string, number> | null;
+    if (!balances || !me) {
+      return null as Map<string, number> | null;
+    }
     const meEntry = balances.find((b) => b.user_id === me.id);
     const meBal = meEntry ? meEntry.balance : 0;
     const result = new Map<string, number>();
@@ -221,4 +240,3 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
     </div>
   );
 };
-

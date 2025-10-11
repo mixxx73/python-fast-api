@@ -13,15 +13,21 @@ export const Login: React.FC<{ onSwitchToSignup?: () => void }> = ({ onSwitchToS
   const validate = () => {
     const errs: { email?: string; password?: string } = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) errs.email = 'Enter a valid email';
-    if (password.length === 0) errs.password = 'Password is required';
+    if (!emailRegex.test(email)) {
+      errs.email = 'Enter a valid email';
+    }
+    if (password.length === 0) {
+      errs.password = 'Password is required';
+    }
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

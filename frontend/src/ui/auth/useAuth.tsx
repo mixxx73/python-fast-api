@@ -20,8 +20,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const setToken = (t: string | null) => {
     setTokenState(t);
-    if (t) localStorage.setItem(TOKEN_KEY, t);
-    else localStorage.removeItem(TOKEN_KEY);
+    if (t) {
+      localStorage.setItem(TOKEN_KEY, t);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
     clientRef.current.setToken(t);
   };
 

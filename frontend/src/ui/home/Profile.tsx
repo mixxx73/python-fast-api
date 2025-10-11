@@ -21,7 +21,9 @@ export const Profile: React.FC = () => {
   }, [client]);
 
   React.useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     setGroups(null);
     setGroupsError(null);
     client
@@ -30,8 +32,12 @@ export const Profile: React.FC = () => {
       .catch((e) => setGroupsError(e?.message || 'Failed to load groups'));
   }, [client, user]);
 
-  if (error) return <div style={{ color: 'red' }}>{error}</div>;
-  if (!user) return <div>Loading profile…</div>;
+  if (error) {
+    return <div style={{ color: 'red' }}>{error}</div>;
+  }
+  if (!user) {
+    return <div>Loading profile…</div>;
+  }
 
   const startEdit = () => {
     setEditing(true);
@@ -46,7 +52,9 @@ export const Profile: React.FC = () => {
   };
 
   const saveName = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     const newName = nameInput.trim();
     if (!newName || newName === user.name) {
       setEditing(false);

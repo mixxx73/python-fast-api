@@ -8,9 +8,18 @@ fastapi = "*"
 sqlalchemy = "*"
 psycopg2-binary = "*"
 alembic = "*"
+bcrypt = "==3.2.2"
 pyjwt = "*"
 pytest = "*"
 pytest-cov = "*"
+httpx = "*"
+botocore = "*"
+boto3 = "*"
+opentelemetry-sdk = "*"
+opentelemetry-exporter-otlp = "*"
+opentelemetry-instrumentation-fastapi = "*"
+opentelemetry-instrumentation-sqlalchemy = "*"
+opentelemetry-instrumentation-requests = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 pydantic = {extras = ["email"], version = "*"}
 passlib = {extras = ["bcrypt"], version = "*"}

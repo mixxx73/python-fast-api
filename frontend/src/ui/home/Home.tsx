@@ -12,7 +12,9 @@ export const Home: React.FC = () => {
   const { setToken, client } = useAuth();
   const parseTab = (hash: string): Tab | null => {
     const h = (hash || '').replace(/^#/, '');
-    if (h === 'profile' || h === 'groups' || h === 'expenses') return h;
+    if (h === 'profile' || h === 'groups' || h === 'expenses') {
+      return h;
+    }
     return null;
   };
   const [activeTab, setActiveTab] = React.useState<Tab>(
@@ -25,7 +27,9 @@ export const Home: React.FC = () => {
     client
       .me()
       .catch(() => {
-        if (mounted) setToken(null);
+        if (mounted) {
+          setToken(null);
+        }
       });
     return () => {
       mounted = false;
@@ -35,7 +39,9 @@ export const Home: React.FC = () => {
   React.useEffect(() => {
     const onHash = () => {
       const t = parseTab(window.location.hash);
-      if (t && t !== activeTab) setActiveTab(t);
+      if (t && t !== activeTab) {
+        setActiveTab(t);
+      }
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);

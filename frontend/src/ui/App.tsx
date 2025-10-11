@@ -13,7 +13,9 @@ export const App: React.FC = () => {
     return <div style={{ padding: 20 }}>Loading…</div>;
   }
 
-  if (token) return <Home />;
+  if (token) {
+    return <Home />;
+  }
 
   return authView === 'login' ? (
     <Login onSwitchToSignup={() => setAuthView('signup')} />

@@ -26,11 +26,15 @@ export const Expenses: React.FC = () => {
     let mounted = true;
     Promise.all([client.listGroups(), client.me(), client.listUsers()])
       .then(([gs, meUser, us]) => {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
         setGroups(gs);
         const mine = gs.filter((g) => g.members.includes(meUser.id));
         setMyGroups(mine);
-        if (mine.length > 0) setSelectedGroup((prev) => prev ?? mine[0].id);
+        if (mine.length > 0) {
+          setSelectedGroup((prev) => prev ?? mine[0].id);
+        }
         setUsers(us);
         setMe(meUser);
         setPayerId(meUser.id);
@@ -53,13 +57,17 @@ export const Expenses: React.FC = () => {
     client
       .listGroupExpenses(selectedGroup)
       .then((es) => {
-        if (mounted) setExpenses(es);
+        if (mounted) {
+          setExpenses(es);
+        }
       })
       .catch((e) => setError(e?.message || 'Failed to load expenses'));
     client
       .listGroupBalances(selectedGroup)
       .then((bs) => {
-        if (mounted) setBalances(bs);
+        if (mounted) {
+          setBalances(bs);
+        }
       })
       .catch((e) => setBalancesError(e?.message || 'Failed to load balances'));
     return () => {
@@ -69,9 +77,13 @@ export const Expenses: React.FC = () => {
 
   // Ensure payer stays valid for the selected group
   React.useEffect(() => {
-    if (!selectedGroup || !groups || !users) return;
+    if (!selectedGroup || !groups || !users) {
+      return;
+    }
     const g = groups.find((x) => x.id === selectedGroup);
-    if (!g) return;
+    if (!g) {
+      return;
+    }
     const memberIds = new Set(g.members);
     if (!memberIds.has(payerId)) {
       if (me && memberIds.has(me.id)) {
@@ -86,7 +98,9 @@ export const Expenses: React.FC = () => {
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGroup) return;
+    if (!selectedGroup) {
+      return;
+    }
     const amt = parseFloat(amount);
     if (Number.isNaN(amt) || amt <= 0) {
       setError('Enter a valid amount > 0');

@@ -31,8 +31,12 @@ export const GroupsList: React.FC = () => {
     };
   }, [client]);
 
-  if (error) return <div style={{ color: 'red' }}>{error}</div>;
-  if (!groups) return <div>Loading groups…</div>;
+  if (error) {
+    return <div style={{ color: 'red' }}>{error}</div>;
+  }
+  if (!groups) {
+    return <div>Loading groups…</div>;
+  }
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +66,9 @@ export const GroupsList: React.FC = () => {
   };
 
   const saveEdit = async (id: string) => {
-    if (!editName.trim()) return;
+    if (!editName.trim()) {
+      return;
+    }
     try {
       setSavingId(id);
       const updated = await client.updateGroup(id, editName.trim());
@@ -77,7 +83,9 @@ export const GroupsList: React.FC = () => {
   };
 
   const renderList = () => {
-    if (groups.length === 0) return <div>No groups yet.</div>;
+    if (groups.length === 0) {
+      return <div>No groups yet.</div>;
+    }
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {groups.map((g) => (
