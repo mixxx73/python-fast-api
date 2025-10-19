@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,6 +16,20 @@ from ..infrastructure.security import get_current_user
 from .schemas import ExpenseCreate, ExpenseRead
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
+
+
+def _as_datetime(value) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(value, tz=timezone.utc)
+    if isinstance(value, str):
+        try:
+            v = value.replace("Z", "+00:00")
+            return datetime.fromisoformat(v)
+        except Exception:
+            pass
+    return datetime.now(timezone.utc)
 
 
 @router.post("/", response_model=ExpenseRead)
@@ -37,39 +52,62 @@ def create_expense(
         raise HTTPException(status_code=404, detail="Payer not found")
 
     # Validation: Check if the payer is a member of the group.
-    member_ids = [m.id for m in group.members]
+    # group.members is List[UUID], so we can use it directly
+    member_ids = group.members
     if pid not in member_ids:
         raise HTTPException(
             status_code=400, detail="Payer is not a member of the group"
         )
 
     repo = SQLAlchemyExpenseRepository(db)
-    domain_expense = Expense(
+    e = Expense(
         group_id=gid,
         payer_id=pid,
         amount=float(expense.amount),
         description=expense.description,
     )
-    repo.add(domain_expense)
-
-    return ExpenseRead.model_validate(domain_expense)
+    repo.add(e)
+    return ExpenseRead(
+        id=e.id,
+        group_id=e.group_id,
+        payer_id=e.payer_id,
+        amount=e.amount,
+        created_at=_as_datetime(e.created_at),
+        description=e.description,
+    )
 
 
 @router.get("/", response_model=list[ExpenseRead])
 def list_expenses(db: Session = Depends(get_db)) -> list[ExpenseRead]:
-    """List all expenses."""
     repo = SQLAlchemyExpenseRepository(db)
-    expenses = repo.list_all()
-    return [ExpenseRead.model_validate(e) for e in expenses]
+    return [
+        ExpenseRead(
+            id=e.id,
+            group_id=e.group_id,
+            payer_id=e.payer_id,
+            amount=e.amount,
+            created_at=_as_datetime(e.created_at),
+            description=e.description,
+        )
+        for e in repo.list_all()
+    ]
 
 
 @router.get("/{expense_id}", response_model=ExpenseRead)
-def get_expense(expense_id: UUID, db: Session = Depends(get_db)) -> ExpenseRead:
-    """Get a specific expense by its ID."""
+def get_expense(expense_id: str, db: Session = Depends(get_db)) -> ExpenseRead:
+    try:
+        eid = UUID(expense_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid UUID format")
     repo = SQLAlchemyExpenseRepository(db)
-    exp = repo.get(expense_id)
-
+    exp = repo.get(eid)
     if not exp:
         raise HTTPException(status_code=404, detail="Expense not found")
-
-    return ExpenseRead.model_validate(exp)
+    return ExpenseRead(
+        id=exp.id,
+        group_id=exp.group_id,
+        payer_id=exp.payer_id,
+        amount=exp.amount,
+        created_at=_as_datetime(exp.created_at),
+        description=exp.description,
+    )

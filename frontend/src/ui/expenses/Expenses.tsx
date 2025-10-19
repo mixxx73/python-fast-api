@@ -3,6 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
 
 import { useAuth } from '../auth/useAuth';
+
 import { Balances } from './Balances';
 
 export const Expenses: React.FC = () => {
@@ -153,7 +154,6 @@ export const Expenses: React.FC = () => {
     return m;
   }, [users]);
 
-
   const timeAgo = (iso: string) => formatDistanceToNow(new Date(iso), { addSuffix: true });
 
   return (
@@ -247,7 +247,7 @@ export const Expenses: React.FC = () => {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ color: '#6b7280', fontSize: 12 }}>
-                        payer: 
+                        payer:
                         {userById.get(e.payer_id) ? (
                           <span>
                             {userById.get(e.payer_id)!.name} ({userById.get(e.payer_id)!.email})

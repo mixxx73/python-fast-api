@@ -1,5 +1,5 @@
-import React from 'react';
 import type { BalanceEntry, User } from '@client/index';
+import React from 'react';
 
 type Props = {
   members: User[];
@@ -16,11 +16,10 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
     try {
       const v = localStorage.getItem('expense_bal_mode');
       if (v === 'group') {
-          setRelativeMode(false);
-      } else if (v === 'relative'){
-
+        setRelativeMode(false);
+      } else if (v === 'relative') {
         setRelativeMode(true);
-        }
+      }
     } catch {}
   }, []);
   React.useEffect(() => {
@@ -31,12 +30,12 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
 
   const totals = React.useMemo(() => {
     if (!balances || !me) {
-        return null;
+      return null;
     }
     const meBal = balances.find((b) => b.user_id === me.id)?.balance || 0;
 
     if (meBal === 0) {
-        return { pos: 0, neg: 0 };
+      return { pos: 0, neg: 0 };
     }
     const pos = meBal > 0 ? Math.round(meBal * 100) / 100 : 0;
     const neg = meBal < 0 ? Math.round(-meBal * 100) / 100 : 0;
@@ -45,7 +44,7 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
 
   const totalsGroup = React.useMemo(() => {
     if (!balances) {
-        return null;
+      return null;
     }
 
     let pos = 0;

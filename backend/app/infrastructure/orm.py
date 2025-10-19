@@ -37,7 +37,7 @@ class UserORM(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
 
     groups: Mapped[List["GroupORM"]] = relationship(
         secondary=group_members,
