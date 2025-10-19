@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -57,7 +56,9 @@ def add_member(
     updated_group = group_repo.get(group_id)
     if not updated_group:
         # This should not happen if the group existed before.
-        raise HTTPException(status_code=500, detail="Failed to retrieve group after update")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve group after update"
+        )
 
     return GroupRead.from_orm(updated_group)
 
@@ -106,13 +107,17 @@ def update_group(
     repo.update_name(group_id, payload.name)
     updated = repo.get(group_id)
     if not updated:
-        raise HTTPException(status_code=500, detail="Failed to retrieve group after update")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve group after update"
+        )
 
     return GroupRead.from_orm(updated)
 
 
 @router.get("/{group_id}/balances", response_model=list[BalanceEntry])
-def get_group_balances(group_id: UUID, db: Session = Depends(get_db)) -> list[BalanceEntry]:
+def get_group_balances(
+    group_id: UUID, db: Session = Depends(get_db)
+) -> list[BalanceEntry]:
     # Note: This endpoint contains significant business logic for calculating balances.
     # In a larger application, this logic should be moved to a dedicated service or
     # domain layer to keep the API endpoint thin and focused on HTTP handling.
