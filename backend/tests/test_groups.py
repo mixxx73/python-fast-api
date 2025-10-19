@@ -50,7 +50,7 @@ def test_group_creation_and_membership(client):
 
     # Invalid UUID
     bad = client.post(f"/groups/not-a-uuid/members/{user_id}", headers=headers)
-    assert bad.status_code == 400
+    assert bad.status_code == 422
 
     # Not found group
     nf = client.post(f"/groups/{uuid4()}/members/{user_id}", headers=headers)

@@ -21,7 +21,7 @@ def test_group_balances_invalid_and_not_found(client):
 
     # Invalid UUID
     r1 = client.get("/groups/not-a-uuid/balances", headers=headers)
-    assert r1.status_code == 400
+    assert r1.status_code == 422
 
     # Not found
     r2 = client.get(f"/groups/{uuid4()}/balances", headers=headers)

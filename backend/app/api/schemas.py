@@ -5,13 +5,12 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, condecimal, constr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, condecimal, constr
 
 
 # Base configuration for schemas that map from ORM models
 class BaseOrmModel(BaseModel):
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Users
