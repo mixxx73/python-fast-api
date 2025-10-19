@@ -24,13 +24,11 @@ export const Home: React.FC = () => {
   // Guard: verify token is valid on mount; if unauthorized, log out (hides menu + logout button)
   React.useEffect(() => {
     let mounted = true;
-    client
-      .me()
-      .catch(() => {
-        if (mounted) {
-          setToken(null);
-        }
-      });
+    client.me().catch(() => {
+      if (mounted) {
+        setToken(null);
+      }
+    });
     return () => {
       mounted = false;
     };

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..domain.models import User
 from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
+from ..infrastructure.orm import UserORM
 from ..infrastructure.repositories import (
     SQLAlchemyGroupRepository,
     SQLAlchemyUserRepository,
@@ -29,6 +30,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     name: str
     password: str
+    is_admin: bool = False
 
 
 class LoginRequest(BaseModel):
@@ -39,32 +41,36 @@ class LoginRequest(BaseModel):
 @router.post("/signup", response_model=Token)
 def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> Token:
     repo = SQLAlchemyUserRepository(db)
-    # Optional pre-check to provide a 409 without raising IntegrityError
-    if repo.get_by_email(payload.email):
-        raise HTTPException(status_code=409, detail="Email already exists")
     pw_hash = hash_password(payload.password)
-    from ..domain.models import User
-
-    user = User(email=payload.email, name=payload.name)
+    user = User(email=payload.email, name=payload.name, is_admin=payload.is_admin)
     try:
         repo.add_with_password(user, pw_hash)
     except IntegrityError:
         db.rollback()
+        # This is the correct way to handle unique constraints.
+        # A pre-check is redundant and could lead to race conditions.
         raise HTTPException(status_code=409, detail="Email already exists")
+
     # Add new user to default group (best-effort)
     try:
         SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user.id)
     except Exception:
+        # Swallowing exceptions is dangerous. If this is a non-critical
+        # "best-effort" operation, the failure should at least be logged for
+        # later review. For example:
+        # logging.warning(f"Failed to add user {user.id} to default group")
         pass
+
     token = create_access_token(str(user.id))
     return Token(access_token=token)
 
 
 @router.post("/login", response_model=Token)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
-    # Fetch raw row to access password_hash
-    from ..infrastructure.orm import UserORM
-
+    # Note: Bypassing the repository to fetch the UserORM object directly
+    # is a pragmatic choice to access the password hash, but it does represent
+    # a leak in the abstraction layer. A cleaner solution would be to have
+    # a method in the UserRepository for authentication that handles this logic.
     row = db.query(UserORM).filter(UserORM.email == payload.email).first()
     if (
         not row

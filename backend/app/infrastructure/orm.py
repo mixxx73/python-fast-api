@@ -3,7 +3,7 @@ from typing import List
 from uuid import UUID as UUID_t
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, String, Table
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, String, Table
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
@@ -37,6 +37,7 @@ class UserORM(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False)
 
     groups: Mapped[List["GroupORM"]] = relationship(
         secondary=group_members,

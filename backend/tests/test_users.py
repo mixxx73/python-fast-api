@@ -19,7 +19,7 @@ def test_users_crud_and_groups_listing(client):
 
     # Invalid UUID
     r4 = client.get("/users/not-a-uuid")
-    assert r4.status_code == 400
+    assert r4.status_code == 422
 
     # Not found UUID
     from uuid import uuid4

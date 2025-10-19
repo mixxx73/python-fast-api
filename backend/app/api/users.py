@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..domain.models import Group, User
+from ..domain.models import User
 from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
 from ..infrastructure.repositories import (
@@ -12,7 +12,7 @@ from ..infrastructure.repositories import (
     SQLAlchemyUserRepository,
 )
 from ..infrastructure.security import get_current_user
-from .schemas import UserCreate, UserRead, UserUpdate
+from .schemas import GroupRead, UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -40,15 +40,12 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRead:
     return UserRead(id=created.id, email=created.email, name=created.name)
 
 
-@router.get("/{user_id}/groups", response_model=list[Group])
-def list_user_groups(user_id: str, db: Session = Depends(get_db)) -> list[Group]:
+@router.get("/{user_id}/groups", response_model=list[GroupRead])
+def list_user_groups(user_id: UUID, db: Session = Depends(get_db)) -> list[GroupRead]:
     """List groups a user belongs to."""
-    try:
-        uid = UUID(user_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid UUID format")
     group_repo = SQLAlchemyGroupRepository(db)
-    return list(group_repo.list_for_user(uid))
+    groups = group_repo.list_for_user(user_id)
+    return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
 
 
 @router.get("/", response_model=list[UserRead])
@@ -58,13 +55,9 @@ def list_users(db: Session = Depends(get_db)) -> list[UserRead]:
 
 
 @router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: str, db: Session = Depends(get_db)) -> UserRead:
-    try:
-        uid = UUID(user_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid UUID format")
+def get_user(user_id: UUID, db: Session = Depends(get_db)) -> UserRead:
     repo = SQLAlchemyUserRepository(db)
-    user = repo.get(uid)
+    user = repo.get(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return UserRead(id=user.id, email=user.email, name=user.name)
@@ -72,21 +65,17 @@ def get_user(user_id: str, db: Session = Depends(get_db)) -> UserRead:
 
 @router.patch("/{user_id}", response_model=UserRead)
 def update_user(
-    user_id: str,
+    user_id: UUID,
     payload: UserUpdate,
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ) -> UserRead:
-    try:
-        uid = UUID(user_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid UUID format")
-    if str(uid) != str(current.id):
+    if user_id != current.id:
         raise HTTPException(status_code=403, detail="Forbidden")
     # Fetch ORM row
     from ..infrastructure.orm import UserORM
 
-    row = db.get(UserORM, uid)
+    row = db.get(UserORM, user_id)
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
     # Apply updates

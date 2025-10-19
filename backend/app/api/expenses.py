@@ -39,21 +39,26 @@ def create_expense(
     current: UserModel = Depends(get_current_user),
 ) -> ExpenseRead:
     """Create a new expense and persist it."""
-    # Ensure group exists and payer exists + is member
     group_repo = SQLAlchemyGroupRepository(db)
     user_repo = SQLAlchemyUserRepository(db)
+
     gid = expense.group_id
     pid = expense.payer_id
-    if not group_repo.get(gid):
+
+    group = group_repo.get(gid)
+    if not group:
         raise HTTPException(status_code=404, detail="Group not found")
     if not user_repo.get(pid):
         raise HTTPException(status_code=404, detail="Payer not found")
-    # Check membership: list_for_user(pid) contains group
-    member_groups = [g.id for g in group_repo.list_for_user(pid)]
-    if gid not in member_groups:
+
+    # Validation: Check if the payer is a member of the group.
+    # group.members is List[UUID], so we can use it directly
+    member_ids = group.members
+    if pid not in member_ids:
         raise HTTPException(
             status_code=400, detail="Payer is not a member of the group"
         )
+
     repo = SQLAlchemyExpenseRepository(db)
     e = Expense(
         group_id=gid,

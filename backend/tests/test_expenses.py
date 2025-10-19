@@ -1,8 +1,18 @@
 def _signup_and_token(
-    client, email="exp_owner@example.com", name="Owner", password="s3cret"
+    client,
+    email="exp_owner@example.com",
+    name="Owner",
+    password="s3cret",
+    is_admin=False,
 ):
     r = client.post(
-        "/auth/signup", json={"email": email, "name": name, "password": password}
+        "/auth/signup",
+        json={
+            "email": email,
+            "name": name,
+            "password": password,
+            "is_admin": is_admin,
+        },
     )
     assert r.status_code == 200
     return r.json()["access_token"]
@@ -14,7 +24,7 @@ def test_expense_flow(client):
     assert ur.status_code == 200
     uid = ur.json()["id"]
 
-    token = _signup_and_token(client)
+    token = _signup_and_token(client, is_admin=True)
     headers = {"Authorization": f"Bearer {token}"}
     gr = client.post("/groups/", json={"name": "Dinner"}, headers=headers)
     assert gr.status_code == 200
@@ -60,7 +70,7 @@ def test_expense_rejects_non_member_payer(client):
     # Create two users; only one joins the group
     u1 = client.post("/users/", json={"email": "x1@example.com", "name": "X1"}).json()
     u2 = client.post("/users/", json={"email": "x2@example.com", "name": "X2"}).json()
-    token = _signup_and_token(client, email="exp_owner2@example.com")
+    token = _signup_and_token(client, email="exp_owner2@example.com", is_admin=True)
     headers = {"Authorization": f"Bearer {token}"}
     g = client.post("/groups/", json={"name": "G"}, headers=headers).json()
     client.post(f"/groups/{g['id']}/members/{u1['id']}", headers=headers)

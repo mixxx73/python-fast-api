@@ -3,6 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
 
 import { useAuth } from '../auth/useAuth';
+
 import { Balances } from './Balances';
 
 export const Expenses: React.FC = () => {
@@ -153,7 +154,6 @@ export const Expenses: React.FC = () => {
     return m;
   }, [users]);
 
-
   const timeAgo = (iso: string) => formatDistanceToNow(new Date(iso), { addSuffix: true });
 
   return (
@@ -169,44 +169,46 @@ export const Expenses: React.FC = () => {
         </select>
       </div>
 
-      <form
-        onSubmit={onCreate}
-        style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
-      >
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={{ width: 140, padding: 8, border: '1px solid #e5e7eb', borderRadius: 6 }}
-        />
-        <select
-          value={payerId}
-          onChange={(e) => setPayerId(e.target.value)}
-          style={{ minWidth: 220, padding: 8, border: '1px solid #e5e7eb', borderRadius: 6 }}
-          aria-label="Payer"
+      {me?.is_admin && (
+        <form
+          onSubmit={onCreate}
+          style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
         >
-          {payerOptions}
-        </select>
-        <input
-          type="text"
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={{
-            flex: 1,
-            minWidth: 240,
-            padding: 8,
-            border: '1px solid #e5e7eb',
-            borderRadius: 6,
-          }}
-        />
-        <button type="submit" disabled={creating || !selectedGroup || !amount || !payerId}>
-          {creating ? 'Adding…' : 'Add expense'}
-        </button>
-      </form>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={{ width: 140, padding: 8, border: '1px solid #e5e7eb', borderRadius: 6 }}
+          />
+          <select
+            value={payerId}
+            onChange={(e) => setPayerId(e.target.value)}
+            style={{ minWidth: 220, padding: 8, border: '1px solid #e5e7eb', borderRadius: 6 }}
+            aria-label="Payer"
+          >
+            {payerOptions}
+          </select>
+          <input
+            type="text"
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: 240,
+              padding: 8,
+              border: '1px solid #e5e7eb',
+              borderRadius: 6,
+            }}
+          />
+          <button type="submit" disabled={creating || !selectedGroup || !amount || !payerId}>
+            {creating ? 'Adding…' : 'Add expense'}
+          </button>
+        </form>
+      )}
 
       <Balances
         members={memberUsers.length ? memberUsers : (users ?? [])}
@@ -245,7 +247,7 @@ export const Expenses: React.FC = () => {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ color: '#6b7280', fontSize: 12 }}>
-                        payer:{' '}
+                        payer:
                         {userById.get(e.payer_id) ? (
                           <span>
                             {userById.get(e.payer_id)!.name} ({userById.get(e.payer_id)!.email})
