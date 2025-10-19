@@ -1,12 +1,13 @@
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import DataError, StatementError
 from sqlalchemy.orm import Session
 
 from ..domain.models import Group
 from ..domain.models import User as UserModel
 from ..infrastructure.database import get_db
-from ..infrastructure.orm import ExpenseORM, GroupORM
 from ..infrastructure.repositories import (
     SQLAlchemyExpenseRepository,
     SQLAlchemyGroupRepository,
@@ -14,6 +15,8 @@ from ..infrastructure.repositories import (
 )
 from ..infrastructure.security import get_current_user
 from .schemas import BalanceEntry, ExpenseRead, GroupCreate, GroupRead, GroupUpdate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -26,10 +29,9 @@ def create_group(
 ) -> GroupRead:
     """Create a new group and persist it."""
     repo = SQLAlchemyGroupRepository(db)
-    domain_group = Group(name=group.name)
-    repo.add(domain_group)
-    # The domain_group object is updated with the ID after the commit.
-    return GroupRead.from_orm(domain_group)
+    g = Group(name=group.name)
+    repo.add(g)
+    return GroupRead(id=g.id, name=g.name, members=g.members)
 
 
 @router.post("/{group_id}/members/{user_id}", response_model=GroupRead)
@@ -43,24 +45,17 @@ def add_member(
     group_repo = SQLAlchemyGroupRepository(db)
     user_repo = SQLAlchemyUserRepository(db)
 
-    # FastAPI handles UUID validation. The existence checks are still needed.
     if not user_repo.get(user_id):
         raise HTTPException(status_code=404, detail="User not found")
-    group = group_repo.get(group_id)
-    if not group:
+    if not group_repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
-
     group_repo.add_member(group_id, user_id)
-
-    # Re-fetch the group to get the updated member list.
-    updated_group = group_repo.get(group_id)
-    if not updated_group:
-        # This should not happen if the group existed before.
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve group after update"
-        )
-
-    return GroupRead.from_orm(updated_group)
+    # Re-fetch groups for user and pick the target group to build members list
+    for g in group_repo.list_for_user(user_id):
+        if g.id == group_id:
+            return GroupRead(id=g.id, name=g.name, members=g.members)
+    # If not found via membership listing, return minimal group
+    return GroupRead(id=group_id, name="", members=[user_id])
 
 
 @router.get("/{group_id}/expenses", response_model=list[ExpenseRead])
@@ -71,17 +66,38 @@ def list_group_expenses(
     group_repo = SQLAlchemyGroupRepository(db)
     if not group_repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
-
     expense_repo = SQLAlchemyExpenseRepository(db)
-    expenses = expense_repo.list_for_group(group_id)
-    return [ExpenseRead.from_orm(e) for e in expenses]
+    from datetime import datetime, timezone
+
+    def as_dt(v):
+        if isinstance(v, datetime):
+            return v
+        if isinstance(v, (int, float)):
+            return datetime.fromtimestamp(v, tz=timezone.utc)
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace("Z", "+00:00"))
+            except Exception:
+                pass
+        return datetime.now(timezone.utc)
+
+    return [
+        ExpenseRead(
+            id=e.id,
+            group_id=e.group_id,
+            payer_id=e.payer_id,
+            amount=e.amount,
+            created_at=as_dt(e.created_at),
+            description=e.description,
+        )
+        for e in expense_repo.list_for_group(group_id)
+    ]
 
 
 @router.get("/", response_model=list[GroupRead])
 def list_groups(db: Session = Depends(get_db)) -> list[GroupRead]:
     repo = SQLAlchemyGroupRepository(db)
-    groups = repo.list_all()
-    return [GroupRead.from_orm(g) for g in groups]
+    return [GroupRead(id=g.id, name=g.name, members=g.members) for g in repo.list_all()]
 
 
 @router.get("/{group_id}", response_model=GroupRead)
@@ -90,7 +106,7 @@ def get_group(group_id: UUID, db: Session = Depends(get_db)) -> GroupRead:
     group = repo.get(group_id)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    return GroupRead.from_orm(group)
+    return GroupRead(id=group.id, name=group.name, members=group.members)
 
 
 @router.patch("/{group_id}", response_model=GroupRead)
@@ -103,33 +119,34 @@ def update_group(
     repo = SQLAlchemyGroupRepository(db)
     if not repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
-
     repo.update_name(group_id, payload.name)
     updated = repo.get(group_id)
-    if not updated:
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve group after update"
-        )
-
-    return GroupRead.from_orm(updated)
+    assert updated is not None
+    return GroupRead(id=updated.id, name=updated.name, members=updated.members)
 
 
 @router.get("/{group_id}/balances", response_model=list[BalanceEntry])
 def get_group_balances(
     group_id: UUID, db: Session = Depends(get_db)
 ) -> list[BalanceEntry]:
-    # Note: This endpoint contains significant business logic for calculating balances.
-    # In a larger application, this logic should be moved to a dedicated service or
-    # domain layer to keep the API endpoint thin and focused on HTTP handling.
-    # It also bypasses the repository pattern by directly using the ORM.
+    """Retrieve balance information for a group.
+
+    Returns a list of balance entries (user_id, balance) for each member.
+    """
+    from ..infrastructure.orm import ExpenseORM, GroupORM
 
     try:
         group = db.get(GroupORM, group_id)
-    except Exception:
-        # Note: Broadly catching exceptions like this is risky as it can hide
-        # underlying issues. The original comment mentioned driver-specific type
-        # coercion errors, which should ideally be addressed at the source.
-        return []
+    except (StatementError, DataError) as e:
+        # Database driver or type coercion error; log and return 500
+        logger.error(
+            f"Database error while loading group {group_id}: {e}",
+            exc_info=True,
+            extra={"group_id": str(group_id)},
+        )
+        raise HTTPException(
+            status_code=500, detail="Internal server error loading group data"
+        )
 
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -139,11 +156,12 @@ def get_group_balances(
         return []
 
     balances = {mid: 0.0 for mid in members}
+
+    # Fetch group expenses
     expenses = db.query(ExpenseORM).filter(ExpenseORM.group_id == group_id).all()
     n = len(members)
-
     for e in expenses:
-        share = float(e.amount) / n if n > 0 else 0.0
+        share = float(e.amount) / n if n else 0.0
         for mid in members:
             balances[mid] -= share
         if e.payer_id in balances:
