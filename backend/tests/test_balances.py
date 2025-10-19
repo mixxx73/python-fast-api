@@ -2,14 +2,23 @@ from uuid import uuid4
 
 
 def _signup_and_token(
-    client, email="bal_tester@example.com", name="Owner", password="s3cret"
+    client,
+    email="bal_tester@example.com",
+    name="Owner",
+    password="s3cret",
+    is_admin=False,
 ):
     # ensure uniqueness to avoid 409 on duplicate email across tests
     local, at, domain = email.partition("@")
     unique_email = f"{local}+{uuid4().hex}@{domain}" if at else f"{email}+{uuid4().hex}"
     r = client.post(
         "/auth/signup",
-        json={"email": unique_email, "name": name, "password": password},
+        json={
+            "email": unique_email,
+            "name": name,
+            "password": password,
+            "is_admin": is_admin,
+        },
     )
     assert r.status_code == 200
     return r.json()["access_token"]
@@ -53,7 +62,7 @@ def test_group_balances_no_members_and_no_expenses(client):
 
 
 def test_group_balances_three_members_rounding(client):
-    token = _signup_and_token(client, email="owner3@example.com")
+    token = _signup_and_token(client, email="owner3@example.com", is_admin=True)
     headers = {"Authorization": f"Bearer {token}"}
     # Three users
     u1 = client.post("/users/", json={"email": "a@example.com", "name": "A"}).json()
@@ -76,7 +85,7 @@ def test_group_balances_three_members_rounding(client):
         },
         headers=headers,
     )
-    assert er1.status_code == 200
+    assert er1.status_code == 200, "1111111111"
     er2 = client.post(
         "/expenses/",
         json={
@@ -87,10 +96,10 @@ def test_group_balances_three_members_rounding(client):
         },
         headers=headers,
     )
-    assert er2.status_code == 200
+    assert er2.status_code == 200, "22222222222222"
     # Balances
     br = client.get(f"/groups/{g['id']}/balances")
-    assert br.status_code == 200
+    assert br.status_code == 200, "33333333333333"
     bals = {b["user_id"]: b["balance"] for b in br.json()}
     # Expected rounding behavior (two decimals)
     assert bals[u1["id"]] == 53.33

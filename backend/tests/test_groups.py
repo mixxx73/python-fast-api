@@ -2,10 +2,20 @@ from uuid import uuid4
 
 
 def _signup_and_token(
-    client, email="carol@example.com", name="Carol", password="s3cret"
+    client,
+    email="carol@example.com",
+    name="Carol",
+    password="s3cret",
+    is_admin=False,
 ):
     r = client.post(
-        "/auth/signup", json={"email": email, "name": name, "password": password}
+        "/auth/signup",
+        json={
+            "email": email,
+            "name": name,
+            "password": password,
+            "is_admin": is_admin,
+        },
     )
     assert r.status_code == 200
     return r.json()["access_token"]
@@ -59,7 +69,9 @@ def test_group_creation_and_membership(client):
 
 def test_group_balances(client):
     # Two users and group
-    token = _signup_and_token(client, email="bal_owner@example.com", name="Owner")
+    token = _signup_and_token(
+        client, email="bal_owner@example.com", name="Owner", is_admin=True
+    )
     headers = {"Authorization": f"Bearer {token}"}
     u1 = client.post("/users/", json={"email": "u1@example.com", "name": "U1"}).json()
     u2 = client.post("/users/", json={"email": "u2@example.com", "name": "U2"}).json()

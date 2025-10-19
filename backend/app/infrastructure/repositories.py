@@ -51,7 +51,7 @@ class InMemoryExpenseRepository(ExpenseRepository):
 
 
 def _to_user_model(row: UserORM) -> User:
-    return User(id=row.id, email=row.email, name=row.name)
+    return User(id=row.id, email=row.email, name=row.name, is_admin=row.is_admin)
 
 
 def _to_group_model(row: GroupORM) -> Group:
@@ -75,7 +75,9 @@ class SQLAlchemyUserRepository(UserRepository):
         self.db = db
 
     def add(self, user: User) -> None:
-        row = UserORM(id=user.id, email=user.email, name=user.name)
+        row = UserORM(
+            id=user.id, email=user.email, name=user.name, is_admin=user.is_admin
+        )
         self.db.add(row)
         self.db.commit()
 
@@ -98,7 +100,11 @@ class SQLAlchemyUserRepository(UserRepository):
 
     def add_with_password(self, user: User, password_hash: str) -> None:
         row = UserORM(
-            id=user.id, email=user.email, name=user.name, password_hash=password_hash
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            password_hash=password_hash,
+            is_admin=user.is_admin,
         )
         self.db.add(row)
         self.db.commit()

@@ -30,6 +30,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     name: str
     password: str
+    is_admin: bool = False
 
 
 class LoginRequest(BaseModel):
@@ -41,7 +42,7 @@ class LoginRequest(BaseModel):
 def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> Token:
     repo = SQLAlchemyUserRepository(db)
     pw_hash = hash_password(payload.password)
-    user = User(email=payload.email, name=payload.name)
+    user = User(email=payload.email, name=payload.name, is_admin=payload.is_admin)
     try:
         repo.add_with_password(user, pw_hash)
     except IntegrityError:

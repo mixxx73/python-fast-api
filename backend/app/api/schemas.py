@@ -31,6 +31,7 @@ class UserUpdate(BaseModel):
 
 class UserRead(UserBase, BaseOrmModel):
     id: UUID
+    is_admin: bool = False
 
 
 # Groups

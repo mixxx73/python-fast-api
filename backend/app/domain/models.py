@@ -9,6 +9,7 @@ class User(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     email: str
     name: str
+    is_admin: bool = False
 
 
 class Group(BaseModel):
