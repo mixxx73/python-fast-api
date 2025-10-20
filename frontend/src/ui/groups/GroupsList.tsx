@@ -18,14 +18,25 @@ export const GroupsList: React.FC = () => {
 
   React.useEffect(() => {
     let mounted = true;
-    Promise.all([client.listGroups(), client.listUsers()])
-      .then(([gs, us]) => {
+
+    const fetchData = async () => {
+      try {
+        const gs = await client.listGroups();
+        if (!mounted) return;
+        setGroups(gs);
+
+        const us = await client.listUsers();
+        if (!mounted) return;
+        setUsers(us);
+      } catch (e: any) {
         if (mounted) {
-          setGroups(gs);
-          setUsers(us);
+          setError(e?.message || 'Failed to load data');
         }
-      })
-      .catch((e) => setError(e?.message || 'Failed to load groups'));
+      }
+    };
+
+    fetchData();
+
     return () => {
       mounted = false;
     };
