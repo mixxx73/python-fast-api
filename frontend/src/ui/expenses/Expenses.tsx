@@ -37,6 +37,7 @@ export const Expenses: React.FC = () => {
           setSelectedGroup((prev) => prev ?? mine[0].id);
         }
         setUsers(us);
+        console.log('eaaaaaaaaaaaaa', meUser);
         setMe(meUser);
         setPayerId(meUser.id);
       })
@@ -114,7 +115,7 @@ export const Expenses: React.FC = () => {
         group_id: selectedGroup,
         amount: amt,
         description: description || null,
-        payer_id: payerId,
+        payer_id: me?.is_admin === true ? payerId : me?.id,
       });
       setExpenses((prev) => (prev ? [created, ...prev] : [created]));
       // Refresh balances after creating an expense
@@ -159,9 +160,6 @@ export const Expenses: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div>is:{ me?.is_admin }</div>
-        <div>me:{ me?.name }</div>
-        <div>ee:{ me?.email }</div>
         <label style={{ fontWeight: 600 }}>Group</label>
         <select
           value={selectedGroup || ''}
@@ -171,7 +169,6 @@ export const Expenses: React.FC = () => {
           {groupOptions}
         </select>
       </div>
-      {me?.is_admin && (
         <form
           onSubmit={onCreate}
           style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
@@ -185,6 +182,7 @@ export const Expenses: React.FC = () => {
             onChange={(e) => setAmount(e.target.value)}
             style={{ width: 140, padding: 8, border: '1px solid #e5e7eb', borderRadius: 6 }}
           />
+      {me?.is_admin === true && (
           <select
             value={payerId}
             onChange={(e) => setPayerId(e.target.value)}
@@ -193,6 +191,12 @@ export const Expenses: React.FC = () => {
           >
             {payerOptions}
           </select>
+      )
+      || (
+          <div>{me?.email}</div>
+          )
+
+      }
           <input
             type="text"
             placeholder="Description (optional)"
@@ -210,7 +214,6 @@ export const Expenses: React.FC = () => {
             {creating ? 'Adding…' : 'Add expense'}
           </button>
         </form>
-      )}
 
       <Balances
         members={memberUsers.length ? memberUsers : (users ?? [])}
