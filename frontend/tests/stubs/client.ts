@@ -1,4 +1,4 @@
-export type User = { id: string; name: string; email: string };
+export type User = { id: string; name: string; email: string; is_admin?: boolean; };
 export type GroupRead = { id: string; name: string; members: string[] };
 export type ExpenseRead = {
   id: string;
@@ -43,17 +43,17 @@ export class ExpenseClient {
     };
   }
   async me(): Promise<User> {
-    return { id: 'u_me', name: 'Test User', email: 'me@example.com' };
+    return { id: 'u_me', name: 'Test User', email: 'me@example.com', is_admin: false };
   }
   async listUsers(): Promise<User[]> {
     return [
-      { id: 'u1', name: 'Alice', email: 'alice@example.com' },
-      { id: 'u2', name: 'Bob', email: 'bob@example.com' },
-      { id: 'u_me', name: 'Test User', email: 'me@example.com' },
+      { id: 'u1', name: 'Alice', email: 'alice@example.com', is_admin: false },
+      { id: 'u2', name: 'Bob', email: 'bob@example.com', is_admin: false },
+      { id: 'u_me', name: 'Test User', email: 'me@example.com', is_admin: false },
     ];
   }
   async updateUserName(id: string, name: string): Promise<User> {
-    return { id, name, email: 'me@example.com' };
+    return { id, name, email: 'me@example.com', is_admin: false };
   }
   async listGroups(): Promise<GroupRead[]> {
     return [

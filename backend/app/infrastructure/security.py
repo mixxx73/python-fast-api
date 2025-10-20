@@ -72,4 +72,4 @@ def get_current_user(
     row = db.get(UserORM, uid)
     if not row:
         raise HTTPException(status_code=401, detail="User not found")
-    return User(id=row.id, email=row.email, name=row.name)
+    return User(id=row.id, email=row.email, name=row.name, is_admin=row.is_admin)

@@ -159,6 +159,9 @@ export const Expenses: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div>is:{ me?.is_admin }</div>
+        <div>me:{ me?.name }</div>
+        <div>ee:{ me?.email }</div>
         <label style={{ fontWeight: 600 }}>Group</label>
         <select
           value={selectedGroup || ''}
@@ -168,7 +171,6 @@ export const Expenses: React.FC = () => {
           {groupOptions}
         </select>
       </div>
-
       {me?.is_admin && (
         <form
           onSubmit={onCreate}

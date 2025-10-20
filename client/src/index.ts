@@ -20,6 +20,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  is_admin: boolean;
 }
 
 export interface GroupRead {
@@ -120,12 +121,16 @@ export class ExpenseClient {
   }
 
   async me(): Promise<User> {
+      // console.log('zzzzzzzzzzzzzzzzz');
     const res = await fetch(`${this.options.baseUrl}/auth/me`, {
       headers: this.headers(),
     });
     if (!res.ok) {
       throw new Error(`Unauthorized (${res.status})`);
     }
+    // const u =await res.json();
+    // console.log('zzxxxxxx',u);
+    // return u as User;
     return (await res.json()) as User;
   }
 
