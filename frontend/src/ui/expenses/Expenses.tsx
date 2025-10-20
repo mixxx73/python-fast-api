@@ -2,6 +2,7 @@ import type { GroupRead, ExpenseRead, User, BalanceEntry } from '@client/index';
 import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
 
+import { handleApiError } from '../../utils/errorHandler';
 import { useAuth } from '../auth/useAuth';
 
 import { Balances } from './Balances';
@@ -37,11 +38,10 @@ export const Expenses: React.FC = () => {
           setSelectedGroup((prev) => prev ?? mine[0].id);
         }
         setUsers(us);
-        console.log('eaaaaaaaaaaaaa', meUser);
         setMe(meUser);
         setPayerId(meUser.id);
       })
-      .catch((e) => setError(e?.message || 'Failed to load groups'));
+      .catch((e) => setError(handleApiError(e)));
     return () => {
       mounted = false;
     };
@@ -63,7 +63,7 @@ export const Expenses: React.FC = () => {
           setExpenses(es);
         }
       })
-      .catch((e) => setError(e?.message || 'Failed to load expenses'));
+      .catch((e) => setError(handleApiError(e)));
     client
       .listGroupBalances(selectedGroup)
       .then((bs) => {
@@ -71,7 +71,7 @@ export const Expenses: React.FC = () => {
           setBalances(bs);
         }
       })
-      .catch((e) => setBalancesError(e?.message || 'Failed to load balances'));
+      .catch((e) => setBalancesError(handleApiError(e)));
     return () => {
       mounted = false;
     };
@@ -124,12 +124,12 @@ export const Expenses: React.FC = () => {
         setBalances(bs);
         setBalancesError(null);
       } catch (e: any) {
-        setBalancesError(e?.message || 'Failed to refresh balances');
+        setBalancesError(handleApiError(e));
       }
       setAmount('');
       setDescription('');
     } catch (e: any) {
-      setError(e?.message || 'Failed to create expense');
+      setError(handleApiError(e));
     } finally {
       setCreating(false);
     }
