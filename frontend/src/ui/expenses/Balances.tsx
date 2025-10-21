@@ -21,11 +21,14 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
         setRelativeMode(true);
       }
     } catch {}
+
   }, []);
+
   React.useEffect(() => {
     try {
       localStorage.setItem('expense_bal_mode', relativeMode ? 'relative' : 'group');
     } catch {}
+
   }, [relativeMode]);
 
   const totals = React.useMemo(() => {
@@ -37,8 +40,10 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
     if (meBal === 0) {
       return { pos: 0, neg: 0 };
     }
+
     const pos = meBal > 0 ? Math.round(meBal * 100) / 100 : 0;
     const neg = meBal < 0 ? Math.round(-meBal * 100) / 100 : 0;
+
     return { pos, neg };
   }, [balances, me]);
 
@@ -67,6 +72,7 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
     if (!balances || !me) {
       return null as Map<string, number> | null;
     }
+
     const meEntry = balances.find((b) => b.user_id === me.id);
     const meBal = meEntry ? meEntry.balance : 0;
     const result = new Map<string, number>();
@@ -109,6 +115,7 @@ export const Balances: React.FC<Props> = ({ members, balances, me, error }) => {
     } else {
       balances.forEach((b) => result.set(b.user_id, 0));
     }
+
     return result;
   }, [balances, me]);
 
