@@ -23,35 +23,44 @@ export const Expenses: React.FC = () => {
   const [creating, setCreating] = React.useState(false);
   const [payerId, setPayerId] = React.useState<string>('');
 
-  React.useEffect(() => {
-    let mounted = true;
-    Promise.all([client.listGroups(), client.me(), client.listUsers()])
-      .then(([gs, meUser, us]) => {
-        if (!mounted) {
-          return;
+    React.useEffect(() => {
+      let mounted = true;
+
+      (async () => {
+        try {
+          const gs = await client.listGroups();
+          const meUser = await client.me();
+          const us = await client.listUsers();
+
+          if (!mounted) {
+            return;
+          }
+
+          setGroups(gs);
+          const mine = gs.filter((g) => g.members.includes(meUser.id));
+          setMyGroups(mine);
+          if (mine.length > 0) {
+            setSelectedGroup((prev) => prev ?? mine[0].id);
+          }
+          setUsers(us);
+          setMe(meUser);
+          setPayerId(meUser.id);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : 'Failed to load groups');
         }
-        setGroups(gs);
-        const mine = gs.filter((g) => g.members.includes(meUser.id));
-        setMyGroups(mine);
-        if (mine.length > 0) {
-          setSelectedGroup((prev) => prev ?? mine[0].id);
-        }
-        setUsers(us);
-        console.log('eaaaaaaaaaaaaa', meUser);
-        setMe(meUser);
-        setPayerId(meUser.id);
-      })
-      .catch((e) => setError(e?.message || 'Failed to load groups'));
-    return () => {
-      mounted = false;
-    };
-  }, [client]);
+      })();
+
+      return () => {
+        mounted = false;
+      };
+    }, [client]);
 
   React.useEffect(() => {
     let mounted = true;
     if (!selectedGroup) {
       setExpenses(null);
       setBalances(null);
+
       return;
     }
     setExpenses(null);
@@ -63,7 +72,7 @@ export const Expenses: React.FC = () => {
           setExpenses(es);
         }
       })
-      .catch((e) => setError(e?.message || 'Failed to load expenses!!!!!!!!!!   '));
+      .catch((e) => setError(e?.message || 'Failed to load expenses'));
     client
       .listGroupBalances(selectedGroup)
       .then((bs) => {
@@ -72,6 +81,7 @@ export const Expenses: React.FC = () => {
         }
       })
       .catch((e) => setBalancesError(e?.message || 'Failed to load balances'));
+
     return () => {
       mounted = false;
     };
@@ -84,6 +94,7 @@ export const Expenses: React.FC = () => {
     }
     const g = groups.find((x) => x.id === selectedGroup);
     if (!g) {
+
       return;
     }
     const memberIds = new Set(g.members);
@@ -152,6 +163,7 @@ export const Expenses: React.FC = () => {
   const userById = React.useMemo(() => {
     const m = new Map<string, User>();
     (users ?? []).forEach((u) => m.set(u.id, u));
+
     return m;
   }, [users]);
 
