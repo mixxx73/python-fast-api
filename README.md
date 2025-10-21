@@ -1,4 +1,9 @@
 # Note, this whole project has been done in 3 hours
+## Key notes:
+- **initial created with 3 hours from docs/Instructions.md with best AI tools set at that moment**
+- **added few improvements and tweaks to match coding standards**
+- **this is not production like app, rather quick demo**
+## Production like versions is coming up
 
 # Expense Settlement Service
 

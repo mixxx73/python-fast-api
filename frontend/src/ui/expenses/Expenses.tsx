@@ -63,7 +63,7 @@ export const Expenses: React.FC = () => {
           setExpenses(es);
         }
       })
-      .catch((e) => setError(e?.message || 'Failed to load expenses'));
+      .catch((e) => setError(e?.message || 'Failed to load expenses!!!!!!!!!!   '));
     client
       .listGroupBalances(selectedGroup)
       .then((bs) => {
