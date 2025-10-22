@@ -72,7 +72,7 @@ export const Expenses: React.FC = () => {
           setExpenses(es);
         }
       })
-      .catch((e) => setError(e?.message || 'Failed to load expenses'));
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load expenses'));
     client
       .listGroupBalances(selectedGroup)
       .then((bs) => {
@@ -80,7 +80,7 @@ export const Expenses: React.FC = () => {
           setBalances(bs);
         }
       })
-      .catch((e) => setBalancesError(e?.message || 'Failed to load balances'));
+      .catch((e) => setBalancesError(e instanceof Error ? e.message : 'Failed to load balances'));
 
     return () => {
       mounted = false;
@@ -134,13 +134,13 @@ export const Expenses: React.FC = () => {
         const bs = await client.listGroupBalances(selectedGroup);
         setBalances(bs);
         setBalancesError(null);
-      } catch (e: any) {
-        setBalancesError(e?.message || 'Failed to refresh balances');
-      }
-      setAmount('');
-      setDescription('');
-    } catch (e: any) {
-      setError(e?.message || 'Failed to create expense');
+        } catch (e) {
+          setBalancesError(e instanceof Error ? e.message : 'Failed to refresh balances');
+        }
+        setAmount('');
+        setDescription('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create expense');
     } finally {
       setCreating(false);
     }
