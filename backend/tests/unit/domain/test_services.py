@@ -1,9 +1,9 @@
-import pytest
 from uuid import uuid4
-from datetime import datetime, timezone
 
-from app.domain.services import summarize_balances
+import pytest
+
 from app.domain.models import Expense
+from app.domain.services import summarize_balances
 
 
 # Fixtures
@@ -36,7 +36,7 @@ class TestSummarizeBalances:
             group_id=sample_group_id,
             payer_id=sample_payer_id,
             amount=100.0,
-            description="Dinner"
+            description="Dinner",
         )
 
         result = summarize_balances([expense])
@@ -53,21 +53,21 @@ class TestSummarizeBalances:
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=50.0,
-                description="Lunch"
+                description="Lunch",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=75.0,
-                description="Dinner"
+                description="Dinner",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=25.0,
-                description="Coffee"
+                description="Coffee",
             ),
         ]
 
@@ -78,7 +78,7 @@ class TestSummarizeBalances:
         assert result[str(sample_payer_id)] == 0.0
 
     def test_multiple_expenses_different_payers(
-            self, sample_payer_id, another_payer_id, sample_group_id
+        self, sample_payer_id, another_payer_id, sample_group_id
     ):
         """Test multiple expenses with different payers."""
         expenses = [
@@ -87,14 +87,14 @@ class TestSummarizeBalances:
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=100.0,
-                description="Hotel"
+                description="Hotel",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=another_payer_id,
                 amount=50.0,
-                description="Food"
+                description="Food",
             ),
         ]
 
@@ -113,7 +113,7 @@ class TestSummarizeBalances:
             group_id=sample_group_id,
             payer_id=sample_payer_id,
             amount=42.50,
-            description="Groceries"
+            description="Groceries",
         )
 
         result = summarize_balances(expense for expense in [expense])
@@ -128,7 +128,7 @@ class TestSummarizeBalances:
             group_id=sample_group_id,
             payer_id=sample_payer_id,
             amount=0.0,
-            description="Free item"
+            description="Free item",
         )
 
         result = summarize_balances([expense])
@@ -143,7 +143,7 @@ class TestSummarizeBalances:
             group_id=sample_group_id,
             payer_id=sample_payer_id,
             amount=100.0,
-            description="Test"
+            description="Test",
         )
 
         result = summarize_balances([expense])
@@ -162,7 +162,7 @@ class TestSummarizeBalances:
                     group_id=sample_group_id,
                     payer_id=sample_payer_id,
                     amount=10.0 * (i + 1),
-                    description=f"Item {i}"
+                    description=f"Item {i}",
                 )
 
         result = summarize_balances(expense_generator())
@@ -171,7 +171,7 @@ class TestSummarizeBalances:
         assert result[str(sample_payer_id)] == 0.0
 
     def test_balance_accumulation_for_multiple_expenses(
-            self, sample_payer_id, sample_group_id
+        self, sample_payer_id, sample_group_id
     ):
         """Test that balances accumulate correctly for multiple expenses."""
         expenses = [
@@ -180,21 +180,21 @@ class TestSummarizeBalances:
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=100.0,
-                description="Expense 1"
+                description="Expense 1",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=200.0,
-                description="Expense 2"
+                description="Expense 2",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=50.0,
-                description="Expense 3"
+                description="Expense 3",
             ),
         ]
 
@@ -215,14 +215,14 @@ class TestSummarizeBalances:
                 group_id=group1,
                 payer_id=sample_payer_id,
                 amount=100.0,
-                description="Group 1 expense"
+                description="Group 1 expense",
             ),
             Expense(
                 id=uuid4(),
                 group_id=group2,
                 payer_id=sample_payer_id,
                 amount=50.0,
-                description="Group 2 expense"
+                description="Group 2 expense",
             ),
         ]
 
@@ -245,28 +245,28 @@ class TestSummarizeBalances:
                 group_id=sample_group_id,
                 payer_id=payer1,
                 amount=150.0,
-                description="Hotel"
+                description="Hotel",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=payer2,
                 amount=75.0,
-                description="Food"
+                description="Food",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=payer1,
                 amount=45.0,
-                description="Transport"
+                description="Transport",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=payer3,
                 amount=30.0,
-                description="Tickets"
+                description="Tickets",
             ),
         ]
 
@@ -286,7 +286,7 @@ class TestSummarizeBalances:
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=10.0,
-                description=f"Expense {i}"
+                description=f"Expense {i}",
             )
             for i in range(1000)
         ]
@@ -297,7 +297,7 @@ class TestSummarizeBalances:
         assert result[str(sample_payer_id)] == 0.0
 
     def test_expense_with_optional_description_none(
-            self, sample_payer_id, sample_group_id
+        self, sample_payer_id, sample_group_id
     ):
         """Test expense with None description."""
         expense = Expense(
@@ -305,7 +305,7 @@ class TestSummarizeBalances:
             group_id=sample_group_id,
             payer_id=sample_payer_id,
             amount=50.0,
-            description=None
+            description=None,
         )
 
         result = summarize_balances([expense])
@@ -322,7 +322,7 @@ class TestSummarizeBalancesEdgeCases:
             group_id=sample_group_id,
             payer_id=sample_payer_id,
             amount=0.01,
-            description="Penny"
+            description="Penny",
         )
 
         result = summarize_balances([expense])
@@ -337,7 +337,7 @@ class TestSummarizeBalancesEdgeCases:
             group_id=sample_group_id,
             payer_id=sample_payer_id,
             amount=999999.99,
-            description="Expensive item"
+            description="Expensive item",
         )
 
         result = summarize_balances([expense])
@@ -353,14 +353,14 @@ class TestSummarizeBalancesEdgeCases:
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=50.0,
-                description="Item 1"
+                description="Item 1",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
                 amount=100.0,
-                description="Item 2"
+                description="Item 2",
             ),
         )
 

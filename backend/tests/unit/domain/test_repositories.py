@@ -1,10 +1,10 @@
-import pytest
-from uuid import uuid4
 from typing import Iterable, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from app.domain.repositories import UserRepository, GroupRepository, ExpenseRepository
+import pytest
+
 from app.domain.models import Expense, Group, User
+from app.domain.repositories import ExpenseRepository, GroupRepository, UserRepository
 
 
 # Concrete implementations for testing
@@ -276,9 +276,7 @@ class TestExpenseRepository:
 
 # Integration Tests
 class TestRepositoryIntegration:
-    def test_user_group_expense_workflow(
-        self, user_repo, group_repo, expense_repo
-    ):
+    def test_user_group_expense_workflow(self, user_repo, group_repo, expense_repo):
         """Test a complete workflow with users, groups, and expenses."""
         # Create users
         user1 = User(id=uuid4(), name="Alice", email="alice@example.com")
