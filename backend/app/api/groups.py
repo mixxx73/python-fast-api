@@ -97,6 +97,7 @@ def list_group_expenses(
 @router.get("/", response_model=list[GroupRead])
 def list_groups(db: Session = Depends(get_db)) -> list[GroupRead]:
     repo = SQLAlchemyGroupRepository(db)
+
     return [GroupRead(id=g.id, name=g.name, members=g.members) for g in repo.list_all()]
 
 
@@ -159,6 +160,7 @@ def get_group_balances(
 
     # Fetch group expenses
     expenses = db.query(ExpenseORM).filter(ExpenseORM.group_id == group_id).all()
+
     n = len(members)
     for e in expenses:
         share = float(e.amount) / n if n else 0.0
