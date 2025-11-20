@@ -56,7 +56,6 @@ class GroupRead(GroupBase, BaseOrmModel):
 class ExpenseBase(BaseModel):
     group_id: UUID
     payer_id: UUID
-    # Using Decimal for financial calculations is a best practice to avoid precision issues.
     amount: condecimal(gt=Decimal("0"))
     description: Optional[constr(max_length=1024)] = None
 
@@ -73,7 +72,6 @@ class ExpenseRead(ExpenseBase, BaseOrmModel):
     created_at: datetime
 
 
-# Balances
 class BalanceEntry(BaseOrmModel):
     user_id: UUID
     balance: float

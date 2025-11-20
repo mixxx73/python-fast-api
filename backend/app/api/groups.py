@@ -28,10 +28,12 @@ def create_group(
     current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
     """Create a new group and persist it."""
+
     repo = SQLAlchemyGroupRepository(db)
-    g = Group(name=group.name)
-    repo.add(g)
-    return GroupRead(id=g.id, name=g.name, members=g.members)
+    group = Group(name=group.name)
+    repo.add(group)
+
+    return GroupRead(id=group.id, name=group.name, members=group.members)
 
 
 @router.post("/{group_id}/members/{user_id}", response_model=GroupRead)
@@ -49,12 +51,12 @@ def add_member(
         raise HTTPException(status_code=404, detail="User not found")
     if not group_repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
+
     group_repo.add_member(group_id, user_id)
-    # Re-fetch groups for user and pick the target group to build members list
     for g in group_repo.list_for_user(user_id):
         if g.id == group_id:
             return GroupRead(id=g.id, name=g.name, members=g.members)
-    # If not found via membership listing, return minimal group
+
     return GroupRead(id=group_id, name="", members=[user_id])
 
 
@@ -158,7 +160,6 @@ def get_group_balances(
 
     balances = {mid: 0.0 for mid in members}
 
-    # Fetch group expenses
     expenses = db.query(ExpenseORM).filter(ExpenseORM.group_id == group_id).all()
 
     n = len(members)

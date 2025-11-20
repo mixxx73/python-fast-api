@@ -111,7 +111,7 @@ class SQLAlchemyUserRepository(UserRepository):
 
 
 class SQLAlchemyGroupRepository(GroupRepository):
-    def __init__(self, db: Session) -> None:
+    def         __init__(self, db: Session) -> None:
         self.db = db
 
     def add(self, group: Group) -> None:

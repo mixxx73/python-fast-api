@@ -21,14 +21,18 @@ router = APIRouter(prefix="/expenses", tags=["expenses"])
 def _as_datetime(value) -> datetime:
     if isinstance(value, datetime):
         return value
+
     if isinstance(value, (int, float)):
         return datetime.fromtimestamp(value, tz=timezone.utc)
+
     if isinstance(value, str):
         try:
             v = value.replace("Z", "+00:00")
+
             return datetime.fromisoformat(v)
         except Exception:
             pass
+
     return datetime.now(timezone.utc)
 
 
@@ -51,8 +55,6 @@ def create_expense(
     if not user_repo.get(pid):
         raise HTTPException(status_code=404, detail="Payer not found")
 
-    # Validation: Check if the payer is a member of the group.
-    # group.members is List[UUID], so we can use it directly
     member_ids = group.members
     if pid not in member_ids:
         raise HTTPException(
@@ -99,10 +101,12 @@ def get_expense(expense_id: str, db: Session = Depends(get_db)) -> ExpenseRead:
         eid = UUID(expense_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid UUID format")
+
     repo = SQLAlchemyExpenseRepository(db)
     exp = repo.get(eid)
     if not exp:
         raise HTTPException(status_code=404, detail="Expense not found")
+
     return ExpenseRead(
         id=exp.id,
         group_id=exp.group_id,
