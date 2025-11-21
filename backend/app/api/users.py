@@ -27,8 +27,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRead:
     repo = SQLAlchemyUserRepository(db)
     try:
         user_created = repo.add(User(email=user.email, name=user.name))
-    except UserExistsError as e:
-        raise HTTPException(status_code=409, detail="Email already exists", exception=e)
+    except UserExistsError as exc:
+        raise HTTPException(status_code=409, detail="Email already exists") from exc
 
     try:
         SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user_created.id)

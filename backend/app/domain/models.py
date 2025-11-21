@@ -10,6 +10,7 @@ class User(BaseModel):
     email: str
     name: str
     is_admin: bool = False
+    password_hash: Optional[str] = None
 
 
 class Group(BaseModel):

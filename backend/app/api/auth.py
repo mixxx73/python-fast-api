@@ -2,9 +2,9 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ..domain.exceptions import UserExistsError
 from ..domain.models import User
 from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
@@ -46,16 +46,20 @@ class LoginRequest(BaseModel):
 def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> Token:
     repo = SQLAlchemyUserRepository(db)
     pw_hash = hash_password(payload.password)
-    user = User(email=payload.email, name=payload.name, is_admin=payload.is_admin)
-    try:
-        repo.add_with_password(user, pw_hash)
-    except IntegrityError:
-        db.rollback()
+    user = User(
+        email=payload.email,
+        name=payload.name,
+        is_admin=payload.is_admin,
+        password_hash=pw_hash,
+    )
 
-        raise HTTPException(status_code=409, detail="Email already exists")
+    try:
+        user_created = repo.add(user)
+    except UserExistsError as exc:
+        raise HTTPException(status_code=409, detail="Email already exists") from exc
 
     try:
-        SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user.id)
+        SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user_created.id)
     except Exception:
         logger.error(
             f"Failed to new user to default group {DEFAULT_GROUP_ID}. ",
@@ -63,7 +67,7 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> Token:
             extra={"group_id": str(DEFAULT_GROUP_ID)},
         )
 
-    token = create_access_token(str(user.id))
+    token = create_access_token(str(user_created.id))
 
     return Token(access_token=token)
 

@@ -81,16 +81,20 @@ class SQLAlchemyUserRepository(UserRepository):
         try:
 
             row = UserORM(
-                id=user.id, email=user.email, name=user.name, is_admin=user.is_admin
+                id=user.id,
+                email=user.email,
+                name=user.name,
+                is_admin=user.is_admin,
+                password_hash=user.password_hash,
             )
             self.db.add(row)
             self.db.commit()
             self.db.refresh(row)
 
             return row
-        except IntegrityError:
+        except IntegrityError as exc:
             self.db.rollback()
-            raise UserExistsError()
+            raise UserExistsError(f"Failed to create user {user.email}") from exc
 
     def get(self, user_id: UUID) -> Optional[User]:
         row = self.db.get(UserORM, user_id)
@@ -108,17 +112,6 @@ class SQLAlchemyUserRepository(UserRepository):
         if not row:
             return None
         return _to_user_model(row)
-
-    def add_with_password(self, user: User, password_hash: str) -> None:
-        row = UserORM(
-            id=user.id,
-            email=user.email,
-            name=user.name,
-            password_hash=password_hash,
-            is_admin=user.is_admin,
-        )
-        self.db.add(row)
-        self.db.commit()
 
 
 class SQLAlchemyGroupRepository(GroupRepository):
