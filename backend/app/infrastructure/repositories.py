@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..domain.exceptions import ExpenseCreateError, UserExistsError
+from ..domain.exceptions import ExpenseCreateError, GroupNotFoundError, UserExistsError
 from ..domain.models import Expense, Group, User
 from ..domain.repositories import ExpenseRepository, GroupRepository, UserRepository
 from .orm import ExpenseORM, GroupORM, UserORM
@@ -151,7 +151,8 @@ class SQLAlchemyGroupRepository(GroupRepository):
     def get(self, group_id: UUID) -> Optional[Group]:
         row = self.db.get(GroupORM, group_id)
         if not row:
-            return None
+            raise GroupNotFoundError(f"Group not found with id {group_id}")
+
         return _to_group_model(row)
 
     def list_all(self) -> Iterable[Group]:

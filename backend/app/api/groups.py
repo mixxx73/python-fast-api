@@ -1,14 +1,14 @@
 import logging
-from math import floor
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.exc import DataError, StatementError
-from sqlalchemy.orm import Session
 
+from ..domain.exceptions import GroupNotFoundError
 from ..domain.models import Group
 from ..domain.models import User as UserModel
-from ..infrastructure.database import get_db
+
+# from ..infrastructure.database import get_db
 from ..infrastructure.dependencies import (
     get_expense_repo,
     get_group_repo,
@@ -50,9 +50,15 @@ def add_member(
     current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
     """Add a user to a group and return the updated group."""
-    if not user_repo.get(user_id):
+    # if not user_repo.get(user_id):
+    try:
+        user_repo.get(user_id)
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
-    if not group_repo.get(group_id):
+    # if not group_repo.get(group_id):
+    try:
+        group_repo.get(group_id)
+    except Exception:
         raise HTTPException(status_code=404, detail="Group not found")
 
     group_repo.add_member(group_id, user_id)
@@ -150,19 +156,26 @@ def update_group(
 
 @router.get("/{group_id}/balances", response_model=list[BalanceEntry])
 def get_group_balances(
-    group_id: UUID, db: Session = Depends(get_db)
+    group_id: UUID,
+    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
+    expense_repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
 ) -> list[BalanceEntry]:
     """Retrieve balance information for a group.
 
     Returns a list of balance entries (user_id, balance) for each member.
     """
-    from ..infrastructure.orm import ExpenseORM, GroupORM
 
+    # group = None
     try:
-        group = db.get(GroupORM, group_id)
-    except (StatementError, DataError) as e:
+        # group = db.get(GroupORM, group_id)
+        group = group_repo.get(group_id)
+    except GroupNotFoundError:
+        # if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    except Exception as exc:
         logger.error(
-            f"Database error while loading group {group_id}: {e}",
+            f"Database error while loading group {group_id}: {exc}",
             exc_info=True,
             extra={"group_id": str(group_id)},
         )
@@ -170,29 +183,35 @@ def get_group_balances(
             status_code=500, detail="Internal server error loading group data"
         )
 
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+    # print('XXXXXXXXXXXXXXXXXXXXXX', group.members)
 
-    members = [m.id for m in group.members]
+    members = [str(m) for m in group.members]
     if not members:
         return []
 
-    balances = {mid: 0.0 for mid in members}
+    balances = {mid: Decimal("0.00") for mid in members}
 
-    expenses = db.query(ExpenseORM).filter(ExpenseORM.group_id == group_id).all()
+    # expenses = db.query(ExpenseORM).filter(ExpenseORM.group_id == group_id).all()
+    expenses = expense_repo.list_for_group(group_id)
 
     n = len(members)
     for e in expenses:
-        share = floor(float(e.amount) / 100) / n if n else 0.0
+        amount = Decimal(e.amount) / Decimal(100)
+        share = amount / Decimal(n) if n else Decimal("0.00")
+
         for mid in members:
             balances[mid] -= share
 
-        if e.payer_id in balances:
-            balances[e.payer_id] += floor(e.amount / 100)
+        payer_id = str(e.payer_id)
+        if payer_id in balances:
+            balances[payer_id] += amount
 
     # return balances
     return [
         # BalanceEntry(user_id=uid, balance=round(bal, 2))
-        {"user_id": uid, "balance": round(bal, 2)}
+        {
+            "user_id": uid,
+            "balance": float(bal.quantize(Decimal("0.01"))),
+        }
         for uid, bal in balances.items()
     ]

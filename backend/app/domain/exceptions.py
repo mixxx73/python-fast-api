@@ -4,3 +4,7 @@ class UserExistsError(Exception):
 
 class ExpenseCreateError(Exception):
     pass
+
+
+class GroupNotFoundError(Exception):
+    pass
