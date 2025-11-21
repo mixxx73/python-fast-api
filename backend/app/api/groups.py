@@ -1,4 +1,5 @@
 import logging
+from math import floor
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
-from math import floor
 
 @router.post("/", response_model=GroupRead)
 def create_group(
@@ -99,11 +99,14 @@ def list_group_expenses(
 
 
 @router.get("/", response_model=list[GroupRead])
-def list_groups(db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)) -> list[GroupRead]:
+def list_groups(
+    db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)
+) -> list[GroupRead]:
     repo = SQLAlchemyGroupRepository(db)
 
-    groups = repo.list_all() if user.is_admin else  repo.list_for_user(user)
+    groups = repo.list_all() if user.is_admin else repo.list_for_user(user)
     return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
+
 
 @router.get("/{group_id}", response_model=GroupRead)
 def get_group(group_id: UUID, db: Session = Depends(get_db)) -> GroupRead:
@@ -176,15 +179,16 @@ def get_group_balances(
 
     n = len(members)
     for e in expenses:
-        share = floor(float(e.amount)/100) / n if n else 0.0
+        share = floor(float(e.amount) / 100) / n if n else 0.0
         for mid in members:
             balances[mid] -= share
 
         if e.payer_id in balances:
-            balances[e.payer_id] += floor(e.amount/100)
+            balances[e.payer_id] += floor(e.amount / 100)
 
     # return balances
     return [
         # BalanceEntry(user_id=uid, balance=round(bal, 2))
-        {"user_id": uid, "balance":round(bal, 2)} for uid, bal in balances.items()
+        {"user_id": uid, "balance": round(bal, 2)}
+        for uid, bal in balances.items()
     ]

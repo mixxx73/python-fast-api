@@ -5,7 +5,15 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, condecimal, constr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    condecimal,
+    constr,
+    field_validator,
+)
 
 
 # Base configuration for schemas that map from ORM models
@@ -73,13 +81,16 @@ class ExpenseRead(ExpenseBase, BaseOrmModel):
                 return v
             return float(v) / 100.0
         return float(v)
+
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class BalanceEntry(BaseOrmModel):
     user_id: UUID
     balance: float = Field(...)
+
     @field_validator("balance", mode="before")
     @classmethod
     def convert_cents_to_dollars(cls, v: int | float) -> float:
@@ -88,4 +99,5 @@ class BalanceEntry(BaseOrmModel):
                 return v
             return float(v) / 100.0
         return float(v)
+
     model_config = ConfigDict(from_attributes=True)
