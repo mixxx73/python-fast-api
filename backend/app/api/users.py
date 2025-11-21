@@ -33,7 +33,7 @@ def create_user(
     except UserExistsError as exc:
         raise HTTPException(status_code=409, detail="Email already exists") from exc
 
-    return user_created
+    return UserRead(id=user_created.id, email=user_created.email, name=user_created.name)
 
 
 @router.get("/{user_id}/groups", response_model=list[GroupRead])
