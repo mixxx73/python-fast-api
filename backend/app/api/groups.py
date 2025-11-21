@@ -9,6 +9,11 @@ from sqlalchemy.orm import Session
 from ..domain.models import Group
 from ..domain.models import User as UserModel
 from ..infrastructure.database import get_db
+from ..infrastructure.dependencies import (
+    get_expense_repo,
+    get_group_repo,
+    get_user_repo,
+)
 from ..infrastructure.repositories import (
     SQLAlchemyExpenseRepository,
     SQLAlchemyGroupRepository,
@@ -25,14 +30,13 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 @router.post("/", response_model=GroupRead)
 def create_group(
     group: GroupCreate,
-    db: Session = Depends(get_db),
+    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
     current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
     """Create a new group and persist it."""
 
-    repo = SQLAlchemyGroupRepository(db)
     group = Group(name=group.name)
-    repo.add(group)
+    group_repo.add(group)
 
     return GroupRead(id=group.id, name=group.name, members=group.members)
 
@@ -41,13 +45,11 @@ def create_group(
 def add_member(
     group_id: UUID,
     user_id: UUID,
-    db: Session = Depends(get_db),
+    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
+    user_repo: SQLAlchemyUserRepository = Depends(get_user_repo),
     current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
     """Add a user to a group and return the updated group."""
-    group_repo = SQLAlchemyGroupRepository(db)
-    user_repo = SQLAlchemyUserRepository(db)
-
     if not user_repo.get(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     if not group_repo.get(group_id):
@@ -63,14 +65,13 @@ def add_member(
 
 @router.get("/{group_id}/expenses", response_model=list[ExpenseRead])
 def list_group_expenses(
-    group_id: UUID, db: Session = Depends(get_db)
+    group_id: UUID,
+    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
+    expense_repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
 ) -> list[ExpenseRead]:
     """List expenses for a group."""
-    group_repo = SQLAlchemyGroupRepository(db)
     if not group_repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
-
-    expense_repo = SQLAlchemyExpenseRepository(db)
     from datetime import datetime, timezone
 
     def as_dt(v):
@@ -100,17 +101,17 @@ def list_group_expenses(
 
 @router.get("/", response_model=list[GroupRead])
 def list_groups(
-    db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)
+    repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
+    user: UserModel = Depends(get_current_user),
 ) -> list[GroupRead]:
-    repo = SQLAlchemyGroupRepository(db)
-
-    groups = repo.list_all() if user.is_admin else repo.list_for_user(user)
+    groups = repo.list_all() if user.is_admin else repo.list_for_user(user.id)
     return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
 
 
 @router.get("/{group_id}", response_model=GroupRead)
-def get_group(group_id: UUID, db: Session = Depends(get_db)) -> GroupRead:
-    repo = SQLAlchemyGroupRepository(db)
+def get_group(
+    group_id: UUID, repo: SQLAlchemyGroupRepository = Depends(get_group_repo)
+) -> GroupRead:
     group = repo.get(group_id)
 
     if not group:
@@ -123,10 +124,9 @@ def get_group(group_id: UUID, db: Session = Depends(get_db)) -> GroupRead:
 def update_group(
     group_id: UUID,
     payload: GroupUpdate,
-    db: Session = Depends(get_db),
+    repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
     current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
-    repo = SQLAlchemyGroupRepository(db)
     if not repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
 

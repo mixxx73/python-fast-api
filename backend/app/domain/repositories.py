@@ -7,7 +7,7 @@ from .models import Expense, Group, User
 
 class UserRepository(ABC):
     @abstractmethod
-    def add(self, user: User) -> None:
+    def add(self, user: User) -> User:
         """Persist a new user."""
 
     @abstractmethod
@@ -17,7 +17,7 @@ class UserRepository(ABC):
 
 class GroupRepository(ABC):
     @abstractmethod
-    def add(self, group: Group) -> None:
+    def add(self, group: Group) -> Group:
         """Persist a new group."""
 
     @abstractmethod
@@ -37,7 +37,7 @@ class GroupRepository(ABC):
 
 class ExpenseRepository(ABC):
     @abstractmethod
-    def add(self, expense: Expense) -> None:
+    def add(self, expense: Expense) -> Expense:
         """Persist a new expense."""
 
     @abstractmethod

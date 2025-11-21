@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from ..domain.exceptions import UserExistsError
 from ..domain.models import User
-from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
+from ..infrastructure.dependencies import get_group_repo, get_user_repo
 from ..infrastructure.repositories import (
     SQLAlchemyGroupRepository,
     SQLAlchemyUserRepository,
@@ -19,47 +19,46 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/", response_model=UserRead)
-def create_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRead:
+def create_user(
+    user: UserCreate,
+    user_repo: SQLAlchemyUserRepository = Depends(get_user_repo),
+) -> UserRead:
     """Create a new user.
 
     Persists the user using SQLAlchemy.
     """
-    repo = SQLAlchemyUserRepository(db)
     try:
-        user_created = repo.add(User(email=user.email, name=user.name))
+        new_user = User(email=user.email, name=user.name)
+        user_created = user_repo.add(new_user)
     except UserExistsError as exc:
         raise HTTPException(status_code=409, detail="Email already exists") from exc
-
-    try:
-        SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user_created.id)
-    except Exception:
-        pass
 
     return user_created
 
 
 @router.get("/{user_id}/groups", response_model=list[GroupRead])
-def list_user_groups(user_id: UUID, db: Session = Depends(get_db)) -> list[GroupRead]:
+def list_user_groups(
+    user_id: UUID,
+    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
+) -> list[GroupRead]:
     """List groups a user belongs to."""
 
-    group_repo = SQLAlchemyGroupRepository(db)
-    groups = group_repo.list_for_user(user_id)
-
-    return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
+    return group_repo.list_for_user(user_id)
 
 
 @router.get("/", response_model=list[UserRead])
-def list_users(db: Session = Depends(get_db)) -> list[UserRead]:
-
-    repo = SQLAlchemyUserRepository(db)
+def list_users(
+    repo: SQLAlchemyUserRepository = Depends(get_user_repo),
+) -> list[UserRead]:
 
     return repo.list_all()
 
 
 @router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: UUID, db: Session = Depends(get_db)) -> UserRead:
+def get_user(
+    user_id: UUID, repo: SQLAlchemyUserRepository = Depends(get_user_repo)
+) -> UserRead:
 
-    repo = SQLAlchemyUserRepository(db)
     user = repo.get(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
