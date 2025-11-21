@@ -137,6 +137,8 @@ class SQLAlchemyGroupRepository(GroupRepository):
         row = GroupORM(id=group.id, name=group.name)
         self.db.add(row)
         self.db.commit()
+        self.db.refresh(row)
+        return _to_group_model(row)
 
     def add_member(self, group_id: UUID, user_id: UUID) -> None:
         group = self.db.get(GroupORM, group_id)
