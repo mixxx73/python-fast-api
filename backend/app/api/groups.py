@@ -4,11 +4,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..domain.exceptions import GroupNotFoundError
+from ..domain.exceptions import GroupNotFoundError, UserNotFoundError
 from ..domain.models import Group
 from ..domain.models import User as UserModel
-
-# from ..infrastructure.database import get_db
 from ..infrastructure.dependencies import (
     get_expense_repo,
     get_group_repo,
@@ -50,18 +48,17 @@ def add_member(
     current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
     """Add a user to a group and return the updated group."""
-    # if not user_repo.get(user_id):
+
     try:
         user_repo.get(user_id)
-    except Exception:
-        raise HTTPException(status_code=404, detail="User not found")
-    # if not group_repo.get(group_id):
-    try:
         group_repo.get(group_id)
-    except Exception:
+    except UserNotFoundError:
+        raise HTTPException(status_code=404, detail="User not found")
+    except GroupNotFoundError:
         raise HTTPException(status_code=404, detail="Group not found")
 
     group_repo.add_member(group_id, user_id)
+
     for g in group_repo.list_for_user(user_id):
         if g.id == group_id:
             return GroupRead(id=g.id, name=g.name, members=g.members)

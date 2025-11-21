@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..domain.exceptions import UserExistsError
+from ..domain.exceptions import UserExistsError, UserNotFoundError
 from ..domain.models import User
 from ..infrastructure.database import get_db
 from ..infrastructure.dependencies import get_group_repo, get_user_repo
@@ -59,9 +59,10 @@ def get_user(
     user_id: UUID, repo: SQLAlchemyUserRepository = Depends(get_user_repo)
 ) -> UserRead:
 
-    user = repo.get(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        user = repo.get(user_id)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="User not found") from exc
 
     return user
 

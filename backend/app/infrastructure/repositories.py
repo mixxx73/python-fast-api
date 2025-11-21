@@ -4,7 +4,12 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..domain.exceptions import ExpenseCreateError, GroupNotFoundError, UserExistsError
+from ..domain.exceptions import (
+    ExpenseCreateError,
+    GroupNotFoundError,
+    UserExistsError,
+    UserNotFoundError,
+)
 from ..domain.models import Expense, Group, User
 from ..domain.repositories import ExpenseRepository, GroupRepository, UserRepository
 from .orm import ExpenseORM, GroupORM, UserORM
@@ -105,10 +110,11 @@ class SQLAlchemyUserRepository(UserRepository):
             self.db.rollback()
             raise UserExistsError(f"Failed to create user {user.email}") from exc
 
-    def get(self, user_id: UUID) -> Optional[UserORM]:
+    def get(self, user_id: UUID) -> Optional[User]:
         row = self.db.get(UserORM, user_id)
         if not row:
-            return None
+            raise UserNotFoundError(f"User not found with id {user_id}")
+
         return _to_user_model(row)
 
     # Extra helper not in interface

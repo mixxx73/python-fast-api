@@ -8,3 +8,7 @@ class ExpenseCreateError(Exception):
 
 class GroupNotFoundError(Exception):
     pass
+
+
+class UserNotFoundError(Exception):
+    pass
