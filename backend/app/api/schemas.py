@@ -59,6 +59,8 @@ class GroupRead(GroupBase, BaseOrmModel):
     id: UUID
     members: list[UUID] = Field(default_factory=list)
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ExpenseBase(BaseModel):
     group_id: UUID

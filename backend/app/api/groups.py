@@ -105,7 +105,9 @@ def list_groups(
     user: UserModel = Depends(get_current_user),
 ) -> list[GroupRead]:
     groups = repo.list_all() if user.is_admin else repo.list_for_user(user.id)
-    return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
+
+    return groups
+    # return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
 
 
 @router.get("/{group_id}", response_model=GroupRead)
@@ -117,7 +119,8 @@ def get_group(
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    return GroupRead(id=group.id, name=group.name, members=group.members)
+    return group
+    # return GroupRead(id=group.id, name=group.name, members=group.members)
 
 
 @router.patch("/{group_id}", response_model=GroupRead)
@@ -141,7 +144,8 @@ def update_group(
         )
         raise HTTPException(status_code=422, detail="Failed to update profile")
 
-    return GroupRead(id=updated.id, name=updated.name, members=updated.members)
+    return updated
+    # return GroupRead(id=updated.id, name=updated.name, members=updated.members)
 
 
 @router.get("/{group_id}/balances", response_model=list[BalanceEntry])

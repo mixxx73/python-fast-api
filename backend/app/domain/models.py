@@ -17,6 +17,7 @@ class Group(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     name: str
     members: List[UUID] = Field(default_factory=list)
+    # created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class Expense(BaseModel):

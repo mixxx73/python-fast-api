@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from ..domain.exceptions import ExpenseCreateError
 from ..domain.models import Expense
 from ..domain.models import User as UserModel
 from ..infrastructure.dependencies import (
@@ -50,7 +51,11 @@ def create_expense(
         amount=int(expense.amount * 100),
         description=expense.description,
     )
-    expense_created = repo.add(e)
+
+    try:
+        expense_created = repo.add(e)
+    except ExpenseCreateError as exc:
+        raise HTTPException(status_code=400, detail="Failed to create expense") from exc
 
     return expense_created
 

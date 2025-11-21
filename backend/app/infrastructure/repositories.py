@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..domain.exceptions import UserExistsError
+from ..domain.exceptions import ExpenseCreateError, UserExistsError
 from ..domain.models import Expense, Group, User
 from ..domain.repositories import ExpenseRepository, GroupRepository, UserRepository
 from .orm import ExpenseORM, GroupORM, UserORM
@@ -182,9 +182,9 @@ class SQLAlchemyExpenseRepository(ExpenseRepository):
             self.db.add(row)
             self.db.commit()
             self.db.refresh(row)
-        except IntegrityError:
+        except IntegrityError as exc:
             self.db.rollback()
-            raise
+            raise ExpenseCreateError("Failed to create expense") from exc
 
         return _to_expense_model(row)
 
