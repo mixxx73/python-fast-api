@@ -4,7 +4,12 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ..domain.exceptions import UserExistsError
+from ..domain.exceptions import (
+    ExpenseCreateError,
+    GroupNotFoundError,
+    UserExistsError,
+    UserNotFoundError,
+)
 from ..domain.models import Expense, Group, User
 from ..domain.repositories import ExpenseRepository, GroupRepository, UserRepository
 from .orm import ExpenseORM, GroupORM, UserORM
@@ -14,8 +19,9 @@ class InMemoryUserRepository(UserRepository):
     def __init__(self) -> None:
         self.users: Dict[UUID, User] = {}
 
-    def add(self, user: User) -> None:
+    def add(self, user: User) -> User:
         self.users[user.id] = user
+        return user
 
     def get(self, user_id: UUID) -> Optional[User]:
         return self.users.get(user_id)
@@ -25,8 +31,9 @@ class InMemoryGroupRepository(GroupRepository):
     def __init__(self) -> None:
         self.groups: Dict[UUID, Group] = {}
 
-    def add(self, group: Group) -> None:
+    def add(self, group: Group) -> Group:
         self.groups[group.id] = group
+        return group
 
     def add_member(self, group_id: UUID, user_id: UUID) -> None:
         group = self.groups[group_id]
@@ -45,15 +52,22 @@ class InMemoryExpenseRepository(ExpenseRepository):
     def __init__(self) -> None:
         self.expenses: Dict[UUID, Expense] = {}
 
-    def add(self, expense: Expense) -> None:
+    def add(self, expense: Expense) -> Expense:
         self.expenses[expense.id] = expense
+        return expense
 
     def list_for_group(self, group_id: UUID) -> Iterable[Expense]:
         return [e for e in self.expenses.values() if e.group_id == group_id]
 
 
 def _to_user_model(row: UserORM) -> User:
-    return User(id=row.id, email=row.email, name=row.name, is_admin=row.is_admin)
+    return User(
+        id=row.id,
+        email=row.email,
+        name=row.name,
+        is_admin=row.is_admin,
+        password_hash=row.password_hash,
+    )
 
 
 def _to_group_model(row: GroupORM) -> Group:
@@ -76,7 +90,7 @@ class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def add(self, user: User) -> UserORM:
+    def add(self, user: User) -> User:
 
         try:
 
@@ -96,11 +110,12 @@ class SQLAlchemyUserRepository(UserRepository):
             self.db.rollback()
             raise UserExistsError(f"Failed to create user {user.email}") from exc
 
-    def get(self, user_id: UUID) -> Optional[UserORM]:
+    def get(self, user_id: UUID) -> Optional[User]:
         row = self.db.get(UserORM, user_id)
         if not row:
-            return None
-        return row
+            raise UserNotFoundError(f"User not found with id {user_id}")
+
+        return _to_user_model(row)
 
     # Extra helper not in interface
     def list_all(self) -> Iterable[User]:
@@ -118,10 +133,12 @@ class SQLAlchemyGroupRepository(GroupRepository):
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def add(self, group: Group) -> None:
+    def add(self, group: Group) -> Group:
         row = GroupORM(id=group.id, name=group.name)
         self.db.add(row)
         self.db.commit()
+        self.db.refresh(row)
+        return _to_group_model(row)
 
     def add_member(self, group_id: UUID, user_id: UUID) -> None:
         group = self.db.get(GroupORM, group_id)
@@ -142,7 +159,8 @@ class SQLAlchemyGroupRepository(GroupRepository):
     def get(self, group_id: UUID) -> Optional[Group]:
         row = self.db.get(GroupORM, group_id)
         if not row:
-            return None
+            raise GroupNotFoundError(f"Group not found with id {group_id}")
+
         return _to_group_model(row)
 
     def list_all(self) -> Iterable[Group]:
@@ -160,7 +178,7 @@ class SQLAlchemyExpenseRepository(ExpenseRepository):
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def add(self, expense: Expense) -> ExpenseORM:
+    def add(self, expense: Expense) -> Expense:
         row = ExpenseORM(
             id=expense.id,
             group_id=expense.group_id,
@@ -169,11 +187,15 @@ class SQLAlchemyExpenseRepository(ExpenseRepository):
             created_at=expense.created_at,
             description=expense.description,
         )
-        self.db.add(row)
-        self.db.commit()
-        self.db.refresh(row)
+        try:
+            self.db.add(row)
+            self.db.commit()
+            self.db.refresh(row)
+        except IntegrityError as exc:
+            self.db.rollback()
+            raise ExpenseCreateError("Failed to create expense") from exc
 
-        return row
+        return _to_expense_model(row)
 
     def list_for_group(self, group_id: UUID) -> Iterable[Expense]:
         rows = self.db.query(ExpenseORM).filter(ExpenseORM.group_id == group_id).all()
