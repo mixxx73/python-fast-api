@@ -96,11 +96,11 @@ class SQLAlchemyUserRepository(UserRepository):
             self.db.rollback()
             raise UserExistsError(f"Failed to create user {user.email}") from exc
 
-    def get(self, user_id: UUID) -> Optional[User]:
+    def get(self, user_id: UUID) -> Optional[UserORM]:
         row = self.db.get(UserORM, user_id)
         if not row:
             return None
-        return _to_user_model(row)
+        return row
 
     # Extra helper not in interface
     def list_all(self) -> Iterable[User]:

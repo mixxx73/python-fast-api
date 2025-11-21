@@ -64,7 +64,7 @@ def get_user(user_id: UUID, db: Session = Depends(get_db)) -> UserRead:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return UserRead(id=user.id, email=user.email, name=user.name)
+    return user
 
 
 @router.patch("/{user_id}", response_model=UserRead)
@@ -95,4 +95,4 @@ def update_user(
         db.rollback()
         raise HTTPException(status_code=409, detail="Email already exists")
 
-    return UserRead(id=row.id, email=row.email, name=row.name)
+    return row
