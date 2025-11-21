@@ -74,12 +74,21 @@ class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def add(self, user: User) -> None:
-        row = UserORM(
-            id=user.id, email=user.email, name=user.name, is_admin=user.is_admin
-        )
-        self.db.add(row)
-        self.db.commit()
+    def add(self, user: User) -> UserORM:
+
+        try:
+
+            row = UserORM(
+                id=user.id, email=user.email, name=user.name, is_admin=user.is_admin
+            )
+            self.db.add(row)
+            self.db.commit()
+            self.db.refresh(row)
+
+            return row
+        except IntegrityError:
+            self.db.rollback()
+            raise UserExistsError()
 
     def get(self, user_id: UUID) -> Optional[User]:
         row = self.db.get(UserORM, user_id)

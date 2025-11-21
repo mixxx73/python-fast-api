@@ -59,7 +59,6 @@ def list_expenses(db: Session = Depends(get_db)) -> list[ExpenseRead]:
     repo = SQLAlchemyExpenseRepository(db)
 
     return repo.list_all()
-    # return [ExpenseRead(**e) for e in repo.list_all()]
 
 
 @router.get("/{expense_id}", response_model=ExpenseRead)

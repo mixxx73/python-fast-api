@@ -13,6 +13,7 @@ from ..infrastructure.repositories import (
 )
 from ..infrastructure.security import get_current_user
 from .schemas import GroupRead, UserCreate, UserRead, UserUpdate
+from ..domain.exceptions import UserExistsError
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -25,21 +26,16 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRead:
     """
     repo = SQLAlchemyUserRepository(db)
     try:
-        repo.add(User(email=user.email, name=user.name))
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Email already exists")
-
-    created = repo.get_by_email(user.email)
-    assert created is not None
+        user_created = repo.add(User(email=user.email, name=user.name))
+    except UserExistsError as e:
+        raise HTTPException(status_code=409, detail="Email already exists", exception=e)
 
     try:
-        SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, created.id)
+        SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user_created.id)
     except Exception:
-        # Best-effort; ignore if default group is missing
         pass
 
-    return UserRead(id=created.id, email=created.email, name=created.name)
+    return user_created
 
 
 @router.get("/{user_id}/groups", response_model=list[GroupRead])
@@ -57,7 +53,7 @@ def list_users(db: Session = Depends(get_db)) -> list[UserRead]:
 
     repo = SQLAlchemyUserRepository(db)
 
-    return [UserRead(id=u.id, email=u.email, name=u.name) for u in repo.list_all()]
+    return repo.list_all()
 
 
 @router.get("/{user_id}", response_model=UserRead)
