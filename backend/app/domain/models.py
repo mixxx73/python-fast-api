@@ -22,6 +22,6 @@ class Expense(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     group_id: UUID
     payer_id: UUID
-    amount: float
+    amount: int
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     description: Optional[str] = None

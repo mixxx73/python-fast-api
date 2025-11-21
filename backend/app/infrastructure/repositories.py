@@ -156,7 +156,7 @@ class SQLAlchemyExpenseRepository(ExpenseRepository):
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def add(self, expense: Expense) -> None:
+    def add(self, expense: Expense) -> ExpenseORM:
         row = ExpenseORM(
             id=expense.id,
             group_id=expense.group_id,
@@ -167,6 +167,9 @@ class SQLAlchemyExpenseRepository(ExpenseRepository):
         )
         self.db.add(row)
         self.db.commit()
+        self.db.refresh(row)
+
+        return row
 
     def list_for_group(self, group_id: UUID) -> Iterable[Expense]:
         rows = self.db.query(ExpenseORM).filter(ExpenseORM.group_id == group_id).all()

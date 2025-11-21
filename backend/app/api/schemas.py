@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, condecimal, constr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, condecimal, constr, field_validator
 
 
 # Base configuration for schemas that map from ORM models
@@ -13,7 +13,6 @@ class BaseOrmModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Users
 class UserBase(BaseModel):
     email: EmailStr
     name: constr(min_length=1, max_length=255)
@@ -34,7 +33,6 @@ class UserRead(UserBase, BaseOrmModel):
     is_admin: bool = False
 
 
-# Groups
 class GroupBase(BaseModel):
     name: constr(min_length=1, max_length=255)
 
@@ -52,7 +50,6 @@ class GroupRead(GroupBase, BaseOrmModel):
     members: list[UUID] = Field(default_factory=list)
 
 
-# Expenses
 class ExpenseBase(BaseModel):
     group_id: UUID
     payer_id: UUID
@@ -66,12 +63,29 @@ class ExpenseCreate(ExpenseBase):
 
 class ExpenseRead(ExpenseBase, BaseOrmModel):
     id: UUID
-    # Note: The amount is converted to a float for the API response.
-    # While common, be mindful of floating-point inaccuracies in client-side logic.
-    amount: float
+    amount: float = Field(...)
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def convert_cents_to_dollars(cls, v: int | float) -> float:
+        if isinstance(v, (int, float)):
+            if isinstance(v, float) and not v.is_integer():
+                return v
+            return float(v) / 100.0
+        return float(v)
     created_at: datetime
 
+    model_config = ConfigDict(from_attributes=True)
 
 class BalanceEntry(BaseOrmModel):
     user_id: UUID
-    balance: float
+    balance: float = Field(...)
+    @field_validator("balance", mode="before")
+    @classmethod
+    def convert_cents_to_dollars(cls, v: int | float) -> float:
+        if isinstance(v, (int, float)):
+            if isinstance(v, float) and not v.is_integer():
+                return v
+            return float(v) / 100.0
+        return float(v)
+    model_config = ConfigDict(from_attributes=True)

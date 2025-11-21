@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.exc import IntegrityError
@@ -17,6 +18,8 @@ from ..infrastructure.security import (
     hash_password,
     verify_password,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -47,30 +50,26 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> Token:
         repo.add_with_password(user, pw_hash)
     except IntegrityError:
         db.rollback()
-        # This is the correct way to handle unique constraints.
-        # A pre-check is redundant and could lead to race conditions.
+
         raise HTTPException(status_code=409, detail="Email already exists")
 
-    # Add new user to default group (best-effort)
     try:
         SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user.id)
     except Exception:
-        # Swallowing exceptions is dangerous. If this is a non-critical
-        # "best-effort" operation, the failure should at least be logged for
-        # later review. For example:
-        # logging.warning(f"Failed to add user {user.id} to default group")
-        pass
+        logger.error(
+            f"Failed to new user to default group {DEFAULT_GROUP_ID}. ",
+            exc_info=True,
+            extra={"group_id": str(DEFAULT_GROUP_ID)},
+        )
 
     token = create_access_token(str(user.id))
+
     return Token(access_token=token)
 
 
 @router.post("/login", response_model=Token)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
-    # Note: Bypassing the repository to fetch the UserORM object directly
-    # is a pragmatic choice to access the password hash, but it does represent
-    # a leak in the abstraction layer. A cleaner solution would be to have
-    # a method in the UserRepository for authentication that handles this logic.
+
     row = db.query(UserORM).filter(UserORM.email == payload.email).first()
     if (
         not row
@@ -78,7 +77,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
         or not verify_password(payload.password, row.password_hash)
     ):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
     token = create_access_token(str(row.id))
+
     return Token(access_token=token)
 
 

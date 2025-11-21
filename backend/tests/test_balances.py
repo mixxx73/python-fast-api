@@ -85,7 +85,7 @@ def test_group_balances_three_members_rounding(client):
         },
         headers=headers,
     )
-    assert er1.status_code == 200, "1111111111"
+    assert er1.status_code == 200
     er2 = client.post(
         "/expenses/",
         json={
@@ -96,10 +96,10 @@ def test_group_balances_three_members_rounding(client):
         },
         headers=headers,
     )
-    assert er2.status_code == 200, "22222222222222"
+    assert er2.status_code == 200
     # Balances
     br = client.get(f"/groups/{g['id']}/balances")
-    assert br.status_code == 200, "33333333333333"
+    assert br.status_code == 200
     bals = {b["user_id"]: b["balance"] for b in br.json()}
     # Expected rounding behavior (two decimals)
     assert bals[u1["id"]] == 53.33

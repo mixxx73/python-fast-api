@@ -35,7 +35,7 @@ class TestSummarizeBalances:
             id=uuid4(),
             group_id=sample_group_id,
             payer_id=sample_payer_id,
-            amount=100.0,
+            amount=10000,
             description="Dinner",
         )
 
@@ -52,21 +52,21 @@ class TestSummarizeBalances:
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=50.0,
+                amount=5000,
                 description="Lunch",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=75.0,
+                amount=7500,
                 description="Dinner",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=25.0,
+                amount=2500,
                 description="Coffee",
             ),
         ]
@@ -112,7 +112,7 @@ class TestSummarizeBalances:
             id=uuid4(),
             group_id=sample_group_id,
             payer_id=sample_payer_id,
-            amount=42.50,
+            amount=4250,
             description="Groceries",
         )
 
@@ -161,7 +161,7 @@ class TestSummarizeBalances:
                     id=uuid4(),
                     group_id=sample_group_id,
                     payer_id=sample_payer_id,
-                    amount=10.0 * (i + 1),
+                    amount=1000 * (i + 1),
                     description=f"Item {i}",
                 )
 
@@ -179,21 +179,21 @@ class TestSummarizeBalances:
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=100.0,
+                amount=10000,
                 description="Expense 1",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=200.0,
+                amount=20000,
                 description="Expense 2",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=50.0,
+                amount=5000,
                 description="Expense 3",
             ),
         ]
@@ -214,14 +214,14 @@ class TestSummarizeBalances:
                 id=uuid4(),
                 group_id=group1,
                 payer_id=sample_payer_id,
-                amount=100.0,
+                amount=10000,
                 description="Group 1 expense",
             ),
             Expense(
                 id=uuid4(),
                 group_id=group2,
                 payer_id=sample_payer_id,
-                amount=50.0,
+                amount=5000,
                 description="Group 2 expense",
             ),
         ]
@@ -244,21 +244,21 @@ class TestSummarizeBalances:
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=payer1,
-                amount=150.0,
+                amount=15000,
                 description="Hotel",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=payer2,
-                amount=75.0,
+                amount=7500,
                 description="Food",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=payer1,
-                amount=45.0,
+                amount=4500,
                 description="Transport",
             ),
             Expense(
@@ -285,7 +285,7 @@ class TestSummarizeBalances:
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=10.0,
+                amount=1000,
                 description=f"Expense {i}",
             )
             for i in range(1000)
@@ -321,7 +321,7 @@ class TestSummarizeBalancesEdgeCases:
             id=uuid4(),
             group_id=sample_group_id,
             payer_id=sample_payer_id,
-            amount=0.01,
+            amount=1,
             description="Penny",
         )
 
@@ -336,7 +336,7 @@ class TestSummarizeBalancesEdgeCases:
             id=uuid4(),
             group_id=sample_group_id,
             payer_id=sample_payer_id,
-            amount=999999.99,
+            amount=99999999,
             description="Expensive item",
         )
 
@@ -352,14 +352,14 @@ class TestSummarizeBalancesEdgeCases:
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=50.0,
+                amount=5000,
                 description="Item 1",
             ),
             Expense(
                 id=uuid4(),
                 group_id=sample_group_id,
                 payer_id=sample_payer_id,
-                amount=100.0,
+                amount=10000,
                 description="Item 2",
             ),
         )

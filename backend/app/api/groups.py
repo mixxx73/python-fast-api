@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
+from math import floor
 
 @router.post("/", response_model=GroupRead)
 def create_group(
@@ -68,6 +69,7 @@ def list_group_expenses(
     group_repo = SQLAlchemyGroupRepository(db)
     if not group_repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
+
     expense_repo = SQLAlchemyExpenseRepository(db)
     from datetime import datetime, timezone
 
@@ -97,18 +99,20 @@ def list_group_expenses(
 
 
 @router.get("/", response_model=list[GroupRead])
-def list_groups(db: Session = Depends(get_db)) -> list[GroupRead]:
+def list_groups(db: Session = Depends(get_db), user: UserModel = Depends(get_current_user)) -> list[GroupRead]:
     repo = SQLAlchemyGroupRepository(db)
 
-    return [GroupRead(id=g.id, name=g.name, members=g.members) for g in repo.list_all()]
-
+    groups = repo.list_all() if user.is_admin else  repo.list_for_user(user)
+    return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
 
 @router.get("/{group_id}", response_model=GroupRead)
 def get_group(group_id: UUID, db: Session = Depends(get_db)) -> GroupRead:
     repo = SQLAlchemyGroupRepository(db)
     group = repo.get(group_id)
+
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
+
     return GroupRead(id=group.id, name=group.name, members=group.members)
 
 
@@ -122,9 +126,18 @@ def update_group(
     repo = SQLAlchemyGroupRepository(db)
     if not repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
+
     repo.update_name(group_id, payload.name)
     updated = repo.get(group_id)
-    assert updated is not None
+
+    if updated is None:
+        logger.error(
+            f"Failed to update group {group_id}. ",
+            exc_info=True,
+            extra={"group_id": str(group_id)},
+        )
+        raise HTTPException(status_code=422, detail="Failed to update profile")
+
     return GroupRead(id=updated.id, name=updated.name, members=updated.members)
 
 
@@ -141,7 +154,6 @@ def get_group_balances(
     try:
         group = db.get(GroupORM, group_id)
     except (StatementError, DataError) as e:
-        # Database driver or type coercion error; log and return 500
         logger.error(
             f"Database error while loading group {group_id}: {e}",
             exc_info=True,
@@ -164,13 +176,15 @@ def get_group_balances(
 
     n = len(members)
     for e in expenses:
-        share = float(e.amount) / n if n else 0.0
+        share = floor(float(e.amount)/100) / n if n else 0.0
         for mid in members:
             balances[mid] -= share
-        if e.payer_id in balances:
-            balances[e.payer_id] += float(e.amount)
 
+        if e.payer_id in balances:
+            balances[e.payer_id] += floor(e.amount/100)
+
+    # return balances
     return [
-        BalanceEntry(user_id=uid, balance=round(bal, 2))
-        for uid, bal in balances.items()
+        # BalanceEntry(user_id=uid, balance=round(bal, 2))
+        {"user_id": uid, "balance":round(bal, 2)} for uid, bal in balances.items()
     ]
