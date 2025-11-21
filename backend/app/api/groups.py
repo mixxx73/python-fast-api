@@ -73,7 +73,9 @@ def list_group_expenses(
     expense_repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
 ) -> list[ExpenseRead]:
     """List expenses for a group."""
-    if not group_repo.get(group_id):
+    try:
+        group_repo.get(group_id)
+    except GroupNotFoundError:
         raise HTTPException(status_code=404, detail="Group not found")
     from datetime import datetime, timezone
 
@@ -122,8 +124,8 @@ def get_group(
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    return group
-    # return GroupRead(id=group.id, name=group.name, members=group.members)
+    # return group
+    return GroupRead(id=group.id, name=group.name, members=group.members)
 
 
 @router.patch("/{group_id}", response_model=GroupRead)
@@ -147,8 +149,8 @@ def update_group(
         )
         raise HTTPException(status_code=422, detail="Failed to update profile")
 
-    return updated
-    # return GroupRead(id=updated.id, name=updated.name, members=updated.members)
+    # return updated
+    return GroupRead(id=updated.id, name=updated.name, members=updated.members)
 
 
 @router.get("/{group_id}/balances", response_model=list[BalanceEntry])
