@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ..domain.exceptions import UserExistsError
 from ..domain.models import User
 from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
@@ -13,7 +14,6 @@ from ..infrastructure.repositories import (
 )
 from ..infrastructure.security import get_current_user
 from .schemas import GroupRead, UserCreate, UserRead, UserUpdate
-from ..domain.exceptions import UserExistsError
 
 router = APIRouter(prefix="/users", tags=["users"])
 

@@ -42,6 +42,7 @@ class UserRead(UserBase, BaseOrmModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class GroupBase(BaseModel):
     name: constr(min_length=1, max_length=255)
 
