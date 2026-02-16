@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..domain.exceptions import (
     ExpenseCreateError,
@@ -15,7 +16,7 @@ from ..domain.exceptions import (
 )
 from ..domain.models import Expense, Group, User
 from ..domain.repositories import ExpenseRepository, GroupRepository, UserRepository
-from .orm import ExpenseORM, GroupORM, UserORM
+from .orm import ExpenseORM, GroupORM, UserORM, group_members
 
 
 class InMemoryUserRepository(UserRepository):
@@ -150,7 +151,7 @@ class SQLAlchemyGroupRepository(GroupRepository):
         row = GroupORM(id=group.id, name=group.name)
         self.db.add(row)
         await self.db.commit()
-        return _to_group_model(row)
+        return Group(id=row.id, name=row.name, members=[])
 
     async def add_member(self, group_id: UUID, user_id: UUID) -> None:
         group = await self.db.get(GroupORM, group_id)
@@ -160,20 +161,30 @@ class SQLAlchemyGroupRepository(GroupRepository):
             await self.db.commit()
 
     async def list_for_user(self, user_id: UUID) -> List[Group]:
-        user = await self.db.get(UserORM, user_id)
-        if not user:
-            return []
-        return [_to_group_model(g) for g in user.groups]
+        result = await self.db.execute(
+            select(GroupORM)
+            .join(group_members, GroupORM.id == group_members.c.group_id)
+            .where(group_members.c.user_id == user_id)
+            .options(selectinload(GroupORM.members))
+        )
+        return [_to_group_model(r) for r in result.scalars().all()]
 
     # Extra helpers not in interface
     async def get(self, group_id: UUID) -> Optional[Group]:
-        row = await self.db.get(GroupORM, group_id)
+        result = await self.db.execute(
+            select(GroupORM)
+            .where(GroupORM.id == group_id)
+            .options(selectinload(GroupORM.members))
+        )
+        row = result.scalar_one_or_none()
         if not row:
             return None
         return _to_group_model(row)
 
     async def list_all(self) -> List[Group]:
-        result = await self.db.execute(select(GroupORM))
+        result = await self.db.execute(
+            select(GroupORM).options(selectinload(GroupORM.members))
+        )
         return [_to_group_model(r) for r in result.scalars().all()]
 
     async def update_name(self, _group_id: UUID, _name: str) -> None:
