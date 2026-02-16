@@ -1,3 +1,5 @@
+"""Expense routes: create, list, and retrieve individual expenses."""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,28 +24,25 @@ router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 
 @router.post("/", response_model=ExpenseRead)
-def create_expense(
+async def create_expense(
     expense: ExpenseCreate,
     group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
     user_repo: SQLAlchemyUserRepository = Depends(get_user_repo),
     repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
-    current: UserModel = Depends(get_current_user),
+    _current: UserModel = Depends(get_current_user),
 ) -> ExpenseRead:
     """Create a new expense and persist it."""
     gid = expense.group_id
     pid = expense.payer_id
 
-    group = group_repo.get(gid)
+    group = await group_repo.get(gid)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    if not user_repo.get(pid):
+    if not await user_repo.get(pid):
         raise HTTPException(status_code=404, detail="Payer not found")
 
-    member_ids = group.members
-    if pid not in member_ids:
-        raise HTTPException(
-            status_code=400, detail="Payer is not a member of the group"
-        )
+    if pid not in group.members:
+        raise HTTPException(status_code=400, detail="Payer is not a member of the group")
 
     e = Expense(
         group_id=gid,
@@ -53,7 +52,7 @@ def create_expense(
     )
 
     try:
-        expense_created = repo.add(e)
+        expense_created = await repo.add(e)
     except ExpenseCreateError as exc:
         raise HTTPException(status_code=400, detail="Failed to create expense") from exc
 
@@ -61,23 +60,25 @@ def create_expense(
 
 
 @router.get("/", response_model=list[ExpenseRead])
-def list_expenses(
+async def list_expenses(
     repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
 ) -> list[ExpenseRead]:
-    return repo.list_all()
+    """Return all expenses."""
+    return await repo.list_all()
 
 
 @router.get("/{expense_id}", response_model=ExpenseRead)
-def get_expense(
+async def get_expense(
     expense_id: str,
     repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
 ) -> ExpenseRead:
+    """Return a single expense by UUID."""
     try:
         eid = UUID(expense_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid UUID format")
-    exp = repo.get(eid)
+
+    exp = await repo.get(eid)
     if not exp:
         raise HTTPException(status_code=404, detail="Expense not found")
-
     return exp

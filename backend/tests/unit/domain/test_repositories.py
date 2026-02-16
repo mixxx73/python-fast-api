@@ -189,22 +189,22 @@ class TestGroupRepository:
 
         assert group_repo.groups[sample_group.id].name == new_name
 
-    def test_update_name_raises_not_implemented_by_default(self):
+    async def test_update_name_raises_not_implemented_by_default(self):
         """Test that update_name raises NotImplementedError in base class."""
 
         class MinimalGroupRepository(GroupRepository):
-            def add(self, group: Group) -> None:
+            async def add(self, group: Group) -> None:
                 pass
 
-            def add_member(self, group_id: UUID, user_id: UUID) -> None:
+            async def add_member(self, group_id: UUID, user_id: UUID) -> None:
                 pass
 
-            def list_for_user(self, user_id: UUID) -> Iterable[Group]:
+            async def list_for_user(self, user_id: UUID) -> Iterable[Group]:
                 return []
 
         repo = MinimalGroupRepository()
         with pytest.raises(NotImplementedError):
-            repo.update_name(uuid4(), "New Name")
+            await repo.update_name(uuid4(), "New Name")
 
 
 # ExpenseRepository Tests

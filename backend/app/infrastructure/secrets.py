@@ -1,8 +1,11 @@
+"""Secret resolution helpers supporting files, Docker secrets, and AWS SSM."""
+
 import os
 from typing import Optional
 
 
 def _read_file(path: str) -> Optional[str]:
+    """Read and return the stripped contents of a file, or None on failure."""
     try:
         with open(path, "r", encoding="utf-8") as f:
             return f.read().strip()
@@ -11,6 +14,7 @@ def _read_file(path: str) -> Optional[str]:
 
 
 def _read_ssm(path: str) -> Optional[str]:
+    """Fetch a parameter from AWS SSM Parameter Store, or None on failure."""
     # Lazy import to avoid boto3 dependency at import time
     try:
         import boto3  # type: ignore

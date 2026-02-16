@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM models mapping domain entities to database tables."""
+
 from datetime import datetime, timezone
 from typing import List
 from uuid import UUID as UUID_t
@@ -29,6 +31,8 @@ group_members = Table(
 
 
 class UserORM(Base):
+    """ORM mapping for the users table."""
+
     __tablename__ = "users"
 
     id: Mapped[UUID_t] = mapped_column(
@@ -47,6 +51,8 @@ class UserORM(Base):
 
 
 class GroupORM(Base):
+    """ORM mapping for the groups table."""
+
     __tablename__ = "groups"
 
     id: Mapped[UUID_t] = mapped_column(
@@ -62,6 +68,8 @@ class GroupORM(Base):
 
 
 class ExpenseORM(Base):
+    """ORM mapping for the expenses table."""
+
     __tablename__ = "expenses"
 
     id: Mapped[UUID_t] = mapped_column(
