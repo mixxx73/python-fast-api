@@ -23,7 +23,9 @@ async def _signup_and_token(
 
 async def test_group_creation_and_membership(client):
     # Create a user (member-to-be)
-    ur = await client.post("/users/", json={"email": "carol@example.com", "name": "Carol"})
+    ur = await client.post(
+        "/users/", json={"email": "carol@example.com", "name": "Carol"}
+    )
     assert ur.status_code == 200
     user_id = ur.json()["id"]
 
@@ -72,9 +74,15 @@ async def test_group_balances(client):
         client, email="bal_owner@example.com", name="Owner", is_admin=True
     )
     headers = {"Authorization": f"Bearer {token}"}
-    u1 = (await client.post("/users/", json={"email": "u1@example.com", "name": "U1"})).json()
-    u2 = (await client.post("/users/", json={"email": "u2@example.com", "name": "U2"})).json()
-    g = (await client.post("/groups/", json={"name": "Balance"}, headers=headers)).json()
+    u1 = (
+        await client.post("/users/", json={"email": "u1@example.com", "name": "U1"})
+    ).json()
+    u2 = (
+        await client.post("/users/", json={"email": "u2@example.com", "name": "U2"})
+    ).json()
+    g = (
+        await client.post("/groups/", json={"name": "Balance"}, headers=headers)
+    ).json()
     await client.post(f"/groups/{g['id']}/members/{u1['id']}", headers=headers)
     await client.post(f"/groups/{g['id']}/members/{u2['id']}", headers=headers)
 

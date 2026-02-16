@@ -6,9 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..domain.exceptions import UserExistsError, UserNotFoundError
+from ..domain.exceptions import UserExistsError
 from ..domain.models import User
-from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
 from ..infrastructure.dependencies import get_group_repo, get_user_repo
 from ..infrastructure.orm import UserORM
@@ -36,7 +35,9 @@ async def create_user(
     except UserExistsError as exc:
         raise HTTPException(status_code=409, detail="Email already exists") from exc
 
-    return UserRead(id=user_created.id, email=user_created.email, name=user_created.name)
+    return UserRead(
+        id=user_created.id, email=user_created.email, name=user_created.name
+    )
 
 
 @router.get("/{user_id}/groups", response_model=list[GroupRead])

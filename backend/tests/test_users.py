@@ -48,8 +48,12 @@ async def test_user_profile_update_with_auth(client):
     assert up.json()["name"] == "New Name"
 
     # Create another user and attempt to update them -> 403
-    other = (await client.post("/users/", json={"email": "o@example.com", "name": "O"})).json()
-    forb = await client.patch(f"/users/{other['id']}", json={"name": "X"}, headers=headers)
+    other = (
+        await client.post("/users/", json={"email": "o@example.com", "name": "O"})
+    ).json()
+    forb = await client.patch(
+        f"/users/{other['id']}", json={"name": "X"}, headers=headers
+    )
     assert forb.status_code == 403
 
     # Email conflict -> 409

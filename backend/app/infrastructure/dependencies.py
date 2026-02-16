@@ -26,7 +26,9 @@ def get_expense_repo(db: AsyncSession = Depends(get_db)) -> SQLAlchemyExpenseRep
     return SQLAlchemyExpenseRepository(db)
 
 
-def get_user_service(db: AsyncSession = Depends(get_db)) -> Callable[[User, UUID], User]:
+def get_user_service(
+    db: AsyncSession = Depends(get_db),
+) -> Callable[[User, UUID], User]:
     user_repo = SQLAlchemyUserRepository(db)
     group_repo = SQLAlchemyGroupRepository(db)
     return build_user_service(user_repo, group_repo, db)

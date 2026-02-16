@@ -50,8 +50,12 @@ async def test_group_balances_no_members_and_no_expenses(client):
     assert r.json() == []
 
     # Add two members but no expenses -> zeros for each
-    u1 = (await client.post("/users/", json={"email": "z1@example.com", "name": "Z1"})).json()
-    u2 = (await client.post("/users/", json={"email": "z2@example.com", "name": "Z2"})).json()
+    u1 = (
+        await client.post("/users/", json={"email": "z1@example.com", "name": "Z1"})
+    ).json()
+    u2 = (
+        await client.post("/users/", json={"email": "z2@example.com", "name": "Z2"})
+    ).json()
     await client.post(f"/groups/{g['id']}/members/{u1['id']}", headers=headers)
     await client.post(f"/groups/{g['id']}/members/{u2['id']}", headers=headers)
     r2 = await client.get(f"/groups/{g['id']}/balances", headers=headers)
@@ -65,11 +69,19 @@ async def test_group_balances_three_members_rounding(client):
     token = await _signup_and_token(client, email="owner3@example.com", is_admin=True)
     headers = {"Authorization": f"Bearer {token}"}
     # Three users
-    u1 = (await client.post("/users/", json={"email": "a@example.com", "name": "A"})).json()
-    u2 = (await client.post("/users/", json={"email": "b@example.com", "name": "B"})).json()
-    u3 = (await client.post("/users/", json={"email": "c@example.com", "name": "C"})).json()
+    u1 = (
+        await client.post("/users/", json={"email": "a@example.com", "name": "A"})
+    ).json()
+    u2 = (
+        await client.post("/users/", json={"email": "b@example.com", "name": "B"})
+    ).json()
+    u3 = (
+        await client.post("/users/", json={"email": "c@example.com", "name": "C"})
+    ).json()
     # Group
-    g = (await client.post("/groups/", json={"name": "Rounding"}, headers=headers)).json()
+    g = (
+        await client.post("/groups/", json={"name": "Rounding"}, headers=headers)
+    ).json()
     # Add members
     await client.post(f"/groups/{g['id']}/members/{u1['id']}", headers=headers)
     await client.post(f"/groups/{g['id']}/members/{u2['id']}", headers=headers)

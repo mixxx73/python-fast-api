@@ -8,12 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..domain.exceptions import (
-    ExpenseCreateError,
-    GroupNotFoundError,
-    UserExistsError,
-    UserNotFoundError,
-)
+from ..domain.exceptions import ExpenseCreateError, UserExistsError
 from ..domain.models import Expense, Group, User
 from ..domain.repositories import ExpenseRepository, GroupRepository, UserRepository
 from .orm import ExpenseORM, GroupORM, UserORM, group_members
@@ -219,7 +214,9 @@ class SQLAlchemyExpenseRepository(ExpenseRepository):
         return _to_expense_model(row)
 
     async def list_for_group(self, group_id: UUID) -> List[Expense]:
-        result = await self.db.execute(select(ExpenseORM).where(ExpenseORM.group_id == group_id))
+        result = await self.db.execute(
+            select(ExpenseORM).where(ExpenseORM.group_id == group_id)
+        )
         return [_to_expense_model(r) for r in result.scalars().all()]
 
     # Extra helpers not in interface

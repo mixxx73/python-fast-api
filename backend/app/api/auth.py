@@ -11,14 +11,17 @@ from ..domain.exceptions import UserExistsError
 from ..domain.models import User
 from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
-from ..infrastructure.repositories import SQLAlchemyGroupRepository, SQLAlchemyUserRepository
+from ..infrastructure.orm import UserORM
+from ..infrastructure.repositories import (
+    SQLAlchemyGroupRepository,
+    SQLAlchemyUserRepository,
+)
 from ..infrastructure.security import (
     create_access_token,
     get_current_user,
     hash_password,
     verify_password,
 )
-from ..infrastructure.orm import UserORM
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +69,9 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)) -> 
         raise HTTPException(status_code=409, detail="Email already exists") from exc
 
     try:
-        await SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user_created.id)
+        await SQLAlchemyGroupRepository(db).add_member(
+            DEFAULT_GROUP_ID, user_created.id
+        )
     except Exception:
         logger.error(
             f"Failed to add new user to default group {DEFAULT_GROUP_ID}.",
@@ -83,7 +88,11 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> To
     """Authenticate with email/password and return a JWT token."""
     result = await db.execute(select(UserORM).where(UserORM.email == payload.email))
     row = result.scalar_one_or_none()
-    if not row or not row.password_hash or not await verify_password(payload.password, row.password_hash):
+    if (
+        not row
+        or not row.password_hash
+        or not await verify_password(payload.password, row.password_hash)
+    ):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token(str(row.id))

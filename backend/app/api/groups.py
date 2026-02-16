@@ -5,7 +5,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..domain.exceptions import GroupNotFoundError, UserNotFoundError
 from ..domain.models import Group
 from ..domain.models import User as UserModel
 from ..domain.services import calculate_group_balances
@@ -91,7 +90,9 @@ async def list_groups(
     user: UserModel = Depends(get_current_user),
 ) -> list[GroupRead]:
     """List all groups (admin) or just the current user's groups."""
-    groups = await repo.list_all() if user.is_admin else await repo.list_for_user(user.id)
+    groups = (
+        await repo.list_all() if user.is_admin else await repo.list_for_user(user.id)
+    )
     return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
 
 

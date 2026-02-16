@@ -20,7 +20,9 @@ async def _signup_and_token(
 
 async def test_expense_flow(client):
     # Create user and group
-    ur = await client.post("/users/", json={"email": "dave@example.com", "name": "Dave"})
+    ur = await client.post(
+        "/users/", json={"email": "dave@example.com", "name": "Dave"}
+    )
     assert ur.status_code == 200
     uid = ur.json()["id"]
 
@@ -68,9 +70,15 @@ async def test_expense_flow(client):
 
 async def test_expense_rejects_non_member_payer(client):
     # Create two users; only one joins the group
-    u1 = (await client.post("/users/", json={"email": "x1@example.com", "name": "X1"})).json()
-    u2 = (await client.post("/users/", json={"email": "x2@example.com", "name": "X2"})).json()
-    token = await _signup_and_token(client, email="exp_owner2@example.com", is_admin=True)
+    u1 = (
+        await client.post("/users/", json={"email": "x1@example.com", "name": "X1"})
+    ).json()
+    u2 = (
+        await client.post("/users/", json={"email": "x2@example.com", "name": "X2"})
+    ).json()
+    token = await _signup_and_token(
+        client, email="exp_owner2@example.com", is_admin=True
+    )
     headers = {"Authorization": f"Bearer {token}"}
     g = (await client.post("/groups/", json={"name": "G"}, headers=headers)).json()
     await client.post(f"/groups/{g['id']}/members/{u1['id']}", headers=headers)

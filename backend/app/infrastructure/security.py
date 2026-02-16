@@ -36,7 +36,9 @@ async def hash_password(password: str) -> str:
 async def verify_password(plain_password: str, password_hash: str) -> bool:
     """Verify a plain-text password against a bcrypt hash."""
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, pwd_context.verify, plain_password, password_hash)
+    return await loop.run_in_executor(
+        None, pwd_context.verify, plain_password, password_hash
+    )
 
 
 def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:

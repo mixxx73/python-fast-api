@@ -42,7 +42,9 @@ async def create_expense(
         raise HTTPException(status_code=404, detail="Payer not found")
 
     if pid not in group.members:
-        raise HTTPException(status_code=400, detail="Payer is not a member of the group")
+        raise HTTPException(
+            status_code=400, detail="Payer is not a member of the group"
+        )
 
     e = Expense(
         group_id=gid,
