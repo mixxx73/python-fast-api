@@ -1,14 +1,17 @@
+"""Domain-specific exceptions."""
+
+
 class UserExistsError(Exception):
-    pass
+    """Raised when attempting to create a user with a duplicate email."""
 
 
 class ExpenseCreateError(Exception):
-    pass
+    """Raised when an expense cannot be persisted."""
 
 
 class GroupNotFoundError(Exception):
-    pass
+    """Raised when a group cannot be found."""
 
 
 class UserNotFoundError(Exception):
-    pass
+    """Raised when a user cannot be found."""

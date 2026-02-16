@@ -21,7 +21,7 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       # Override if needed; defaults set in image
-      DB_DIALECT: postgresql+psycopg2
+      DB_DIALECT: postgresql+asyncpg
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: app
@@ -73,6 +73,22 @@ services:
       - "16686:16686"   # UI
       - "4317:4317"     # OTLP gRPC
     # No profile so it always runs alongside backend for tracing
+
+  backend-tests:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    profiles: ["test"]
+    environment:
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+      SECRET_KEY: test-insecure-secret-for-ci-testing
+      PYTHONPATH: /app
+    working_dir: /app
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - ./backend/pyproject.toml:/app/pyproject.toml:ro
+    command: ["python", "-m", "pytest", "tests", "-v", "--tb=short"]
 
   frontend-tests:
     build:

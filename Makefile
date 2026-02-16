@@ -30,6 +30,11 @@ lint-fix-all:
 	@docker compose --profile dev run --rm lint-fix && \
 	 docker compose --profile dev run --rm frontend-lint-fix
 
+.PHONY: test
+
+test:
+	@docker compose --profile test run --rm backend-tests
+
 .PHONY: frontend-test
 
 frontend-test:

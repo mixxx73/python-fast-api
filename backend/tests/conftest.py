@@ -1,60 +1,65 @@
 import os
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+# MUST be set before any app imports — database.py creates the engine at module load time
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
-from app.infrastructure import database as dbmod
-from app.infrastructure.orm import Base
-from app.main import app
+import pytest_asyncio  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy.ext.asyncio import (  # noqa: E402
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.pool import StaticPool  # noqa: E402
+
+from app.infrastructure import database as dbmod  # noqa: E402
+from app.infrastructure.orm import Base  # noqa: E402
+from app.main import app  # noqa: E402
+
+# -----------------------------------------------------------------------
+# The app-level engine was created with the sqlite URL above.
+# Reconfigure it to use StaticPool so all connections share one in-memory DB.
+# -----------------------------------------------------------------------
+_test_engine = create_async_engine(
+    "sqlite+aiosqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+_test_session_factory = async_sessionmaker(
+    _test_engine,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+)
+
+# Replace the app-level engine so the lifespan startup uses our test engine
+dbmod.engine = _test_engine
 
 
-@pytest.fixture(scope="session")
-def test_engine():
-    # Force an in-memory SQLite URL for tests, regardless of external env
-    os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
-    engine = create_engine(
-        os.environ["DATABASE_URL"],
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        future=True,
-    )
-    Base.metadata.create_all(bind=engine)
-    return engine
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def _create_tables():
+    """Create all tables once for the entire test session."""
+    async with _test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
 
 
-@pytest.fixture()
-def db_session(test_engine):
-    TestingSessionLocal = sessionmaker(
-        bind=test_engine, autoflush=False, autocommit=False
-    )
-    session = TestingSessionLocal()
-    try:
+@pytest_asyncio.fixture()
+async def db_session() -> AsyncSession:
+    async with _test_session_factory() as session:
         yield session
-    finally:
-        session.close()
 
 
-@pytest.fixture()
-def client(db_session, monkeypatch):
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
-
-    # Patch engine and SessionLocal used by the app
-    monkeypatch.setattr(dbmod, "engine", db_session.get_bind())
-    monkeypatch.setattr(dbmod, "SessionLocal", lambda: db_session)
-
-    # Also ensure startup uses the test engine
-    import app.main as mainmod
-
-    monkeypatch.setattr(mainmod, "engine", db_session.get_bind())
+@pytest_asyncio.fixture()
+async def client(db_session: AsyncSession):
+    async def override_get_db():
+        yield db_session
 
     app.dependency_overrides[dbmod.get_db] = override_get_db
 
-    with TestClient(app) as c:
-        yield c
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()

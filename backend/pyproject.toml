@@ -1,3 +1,11 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+filterwarnings = [
+    # passlib imports the deprecated stdlib `crypt` module even when using bcrypt;
+    # this is a passlib internals issue unrelated to our code.
+    "ignore::DeprecationWarning:passlib",
+]
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"

@@ -1,13 +1,15 @@
 fastapi
 uvicorn[standard]
 pydantic[email]
-sqlalchemy
-psycopg2-binary
+sqlalchemy[asyncio]
+asyncpg
+aiosqlite
 alembic
 passlib[bcrypt]
 bcrypt==3.2.2
 PyJWT
 pytest
+pytest-asyncio
 pytest-cov
 httpx
 botocore

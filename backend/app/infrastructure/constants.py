@@ -1,3 +1,5 @@
+"""Application-wide constants resolved from environment variables."""
+
 import os
 from uuid import UUID
 
@@ -6,6 +8,7 @@ _DEFAULT_ID = UUID("11111111-1111-1111-1111-111111111111")
 
 
 def _read_uuid(var: str, fallback: UUID) -> UUID:
+    """Read a UUID from an environment variable, falling back to a default."""
     val = os.getenv(var)
     if val:
         try:
