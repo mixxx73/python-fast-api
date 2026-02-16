@@ -8,11 +8,8 @@ from ..domain.exceptions import UserExistsError
 from ..domain.models import User
 from ..infrastructure.constants import DEFAULT_GROUP_ID
 from ..infrastructure.database import get_db
+from ..infrastructure.dependencies import get_user_service
 from ..infrastructure.orm import UserORM
-from ..infrastructure.repositories import (
-    SQLAlchemyGroupRepository,
-    SQLAlchemyUserRepository,
-)
 from ..infrastructure.security import (
     create_access_token,
     get_current_user,
@@ -43,8 +40,10 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/signup", response_model=Token)
-def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> Token:
-    repo = SQLAlchemyUserRepository(db)
+def signup(
+    payload: SignupRequest,
+    user_service=Depends(get_user_service),
+) -> Token:
     pw_hash = hash_password(payload.password)
     user = User(
         email=payload.email,
@@ -54,18 +53,9 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> Token:
     )
 
     try:
-        user_created = repo.add(user)
+        user_created = user_service(user, DEFAULT_GROUP_ID)
     except UserExistsError as exc:
         raise HTTPException(status_code=409, detail="Email already exists") from exc
-
-    try:
-        SQLAlchemyGroupRepository(db).add_member(DEFAULT_GROUP_ID, user_created.id)
-    except Exception:
-        logger.error(
-            f"Failed to new user to default group {DEFAULT_GROUP_ID}. ",
-            exc_info=True,
-            extra={"group_id": str(DEFAULT_GROUP_ID)},
-        )
 
     token = create_access_token(str(user_created.id))
 
