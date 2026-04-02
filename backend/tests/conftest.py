@@ -3,14 +3,14 @@ import os
 # MUST be set before any app imports — database.py creates the engine at module load time
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
-import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
+import pytest_asyncio  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: E402
+from sqlalchemy.pool import StaticPool  # noqa: E402
 
-from app.infrastructure import database as dbmod
-from app.infrastructure.orm import Base
-from app.main import app
+from app.infrastructure import database as dbmod  # noqa: E402
+from app.infrastructure.orm import Base  # noqa: E402
+from app.main import app  # noqa: E402
 
 # -----------------------------------------------------------------------
 # The app-level engine was created with the sqlite URL above.
