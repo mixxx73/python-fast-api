@@ -1,5 +1,3 @@
-"""Password hashing, JWT creation/decoding, and FastAPI auth dependency."""
-
 import asyncio
 import os
 from datetime import datetime, timedelta, timezone
@@ -28,21 +26,16 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
 
 
 async def hash_password(password: str) -> str:
-    """Hash a plain-text password using bcrypt (runs in executor to stay async)."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, pwd_context.hash, password)
 
 
 async def verify_password(plain_password: str, password_hash: str) -> bool:
-    """Verify a plain-text password against a bcrypt hash."""
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(
-        None, pwd_context.verify, plain_password, password_hash
-    )
+    return await loop.run_in_executor(None, pwd_context.verify, plain_password, password_hash)
 
 
 def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a signed JWT with the given subject and optional expiry."""
     if expires_delta is None:
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     now = datetime.now(tz=timezone.utc)
@@ -56,7 +49,6 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
 
 
 def decode_token(token: str) -> dict:
-    """Decode and validate a JWT, raising HTTP 401 on failure."""
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError:
@@ -69,7 +61,6 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    """FastAPI dependency: extract and validate bearer token, return the user."""
     token = credentials.credentials
     payload = decode_token(token)
     sub = payload.get("sub")

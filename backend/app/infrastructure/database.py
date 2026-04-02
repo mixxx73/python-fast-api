@@ -1,5 +1,3 @@
-"""Database engine and session factory configuration."""
-
 import os
 from typing import AsyncGenerator
 
@@ -9,7 +7,6 @@ from .secrets import get_secret
 
 
 def _database_url() -> str:
-    """Build the database URL from secrets or individual env vars."""
     # 1) Full URL from secrets/env
     url = get_secret("DATABASE_URL")
 

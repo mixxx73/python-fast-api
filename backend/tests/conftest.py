@@ -3,18 +3,14 @@ import os
 # MUST be set before any app imports — database.py creates the engine at module load time
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
-import pytest_asyncio  # noqa: E402
-from httpx import ASGITransport, AsyncClient  # noqa: E402
-from sqlalchemy.ext.asyncio import (  # noqa: E402
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy.pool import StaticPool  # noqa: E402
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
-from app.infrastructure import database as dbmod  # noqa: E402
-from app.infrastructure.orm import Base  # noqa: E402
-from app.main import app  # noqa: E402
+from app.infrastructure import database as dbmod
+from app.infrastructure.orm import Base
+from app.main import app
 
 # -----------------------------------------------------------------------
 # The app-level engine was created with the sqlite URL above.
@@ -57,9 +53,7 @@ async def client(db_session: AsyncSession):
 
     app.dependency_overrides[dbmod.get_db] = override_get_db
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
