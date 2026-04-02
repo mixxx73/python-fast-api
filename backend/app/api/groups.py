@@ -1,18 +1,13 @@
-"""Group routes: create, list, retrieve, update groups and manage balances."""
-
 import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..domain.models import Group
 from ..domain.models import User as UserModel
 from ..domain.services import calculate_group_balances
-from ..infrastructure.dependencies import (
-    get_expense_repo,
-    get_group_repo,
-    get_user_repo,
-)
+from ..infrastructure.database import get_db
 from ..infrastructure.repositories import (
     SQLAlchemyExpenseRepository,
     SQLAlchemyGroupRepository,
@@ -29,12 +24,13 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 @router.post("/", response_model=GroupRead)
 async def create_group(
     group: GroupCreate,
-    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
+    db: AsyncSession = Depends(get_db),
     _current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
     """Create a new group and persist it."""
+    repo = SQLAlchemyGroupRepository(db)
     new_group = Group(name=group.name)
-    await group_repo.add(new_group)
+    await repo.add(new_group)
     return GroupRead(id=new_group.id, name=new_group.name, members=new_group.members)
 
 
@@ -42,11 +38,13 @@ async def create_group(
 async def add_member(
     group_id: UUID,
     user_id: UUID,
-    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
-    user_repo: SQLAlchemyUserRepository = Depends(get_user_repo),
+    db: AsyncSession = Depends(get_db),
     _current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
     """Add a user to a group and return the updated group."""
+    group_repo = SQLAlchemyGroupRepository(db)
+    user_repo = SQLAlchemyUserRepository(db)
+
     if not await user_repo.get(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     if not await group_repo.get(group_id):
@@ -62,14 +60,14 @@ async def add_member(
 
 @router.get("/{group_id}/expenses", response_model=list[ExpenseRead])
 async def list_group_expenses(
-    group_id: UUID,
-    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
-    expense_repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
+    group_id: UUID, db: AsyncSession = Depends(get_db)
 ) -> list[ExpenseRead]:
     """List expenses for a group."""
+    group_repo = SQLAlchemyGroupRepository(db)
     if not await group_repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
 
+    expense_repo = SQLAlchemyExpenseRepository(db)
     expenses = await expense_repo.list_for_group(group_id)
     return [
         ExpenseRead(
@@ -86,22 +84,16 @@ async def list_group_expenses(
 
 @router.get("/", response_model=list[GroupRead])
 async def list_groups(
-    repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
-    user: UserModel = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db), user: UserModel = Depends(get_current_user)
 ) -> list[GroupRead]:
-    """List all groups (admin) or just the current user's groups."""
-    groups = (
-        await repo.list_all() if user.is_admin else await repo.list_for_user(user.id)
-    )
+    repo = SQLAlchemyGroupRepository(db)
+    groups = await repo.list_all() if user.is_admin else await repo.list_for_user(user.id)
     return [GroupRead(id=g.id, name=g.name, members=g.members) for g in groups]
 
 
 @router.get("/{group_id}", response_model=GroupRead)
-async def get_group(
-    group_id: UUID,
-    repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
-) -> GroupRead:
-    """Return a single group by UUID."""
+async def get_group(group_id: UUID, db: AsyncSession = Depends(get_db)) -> GroupRead:
+    repo = SQLAlchemyGroupRepository(db)
     group = await repo.get(group_id)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -112,10 +104,10 @@ async def get_group(
 async def update_group(
     group_id: UUID,
     payload: GroupUpdate,
-    repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
+    db: AsyncSession = Depends(get_db),
     _current: UserModel = Depends(get_current_user),
 ) -> GroupRead:
-    """Rename a group."""
+    repo = SQLAlchemyGroupRepository(db)
     if not await repo.get(group_id):
         raise HTTPException(status_code=404, detail="Group not found")
 
@@ -135,11 +127,12 @@ async def update_group(
 
 @router.get("/{group_id}/balances", response_model=list[BalanceEntry])
 async def get_group_balances(
-    group_id: UUID,
-    group_repo: SQLAlchemyGroupRepository = Depends(get_group_repo),
-    expense_repo: SQLAlchemyExpenseRepository = Depends(get_expense_repo),
+    group_id: UUID, db: AsyncSession = Depends(get_db)
 ) -> list[BalanceEntry]:
     """Retrieve balance information for a group."""
+    group_repo = SQLAlchemyGroupRepository(db)
+    expense_repo = SQLAlchemyExpenseRepository(db)
+
     group = await group_repo.get(group_id)
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")

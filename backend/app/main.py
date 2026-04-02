@@ -1,5 +1,3 @@
-"""FastAPI application entry point: wires routers, lifespan, and tracing."""
-
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -13,7 +11,6 @@ from .observability import init_tracing
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage application startup (table creation, seeding) and shutdown."""
     # Startup: create tables if they do not exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -53,5 +50,4 @@ app.include_router(expenses.router)
 
 @app.get("/")
 async def read_root() -> dict[str, str]:
-    """Health-check endpoint."""
     return {"status": "ok"}

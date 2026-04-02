@@ -1,5 +1,3 @@
-"""Pydantic request/response schemas for the API layer."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -20,33 +18,25 @@ from pydantic import (
 
 # Base configuration for schemas that map from ORM models
 class BaseOrmModel(BaseModel):
-    """Base schema with ORM mode enabled for all read schemas."""
-
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserBase(BaseModel):
-    """Shared user fields used by create and read schemas."""
-
     email: EmailStr
     name: constr(min_length=1, max_length=255)
 
 
 class UserCreate(UserBase):
-    """Schema for creating a new user."""
+    pass
 
 
 class UserUpdate(BaseModel):
-    """Schema for partially updating a user (all fields optional)."""
-
     # All fields are optional for PATCH operations
     email: Optional[EmailStr] = None
     name: Optional[constr(min_length=1, max_length=255)] = None
 
 
 class UserRead(UserBase, BaseOrmModel):
-    """Schema for returning user data in responses."""
-
     id: UUID
     is_admin: bool = False
 
@@ -54,31 +44,23 @@ class UserRead(UserBase, BaseOrmModel):
 
 
 class GroupBase(BaseModel):
-    """Shared group fields."""
-
     name: constr(min_length=1, max_length=255)
 
 
 class GroupCreate(GroupBase):
-    """Schema for creating a new group."""
+    pass
 
 
 class GroupUpdate(GroupBase):
-    """Schema for updating a group name."""
+    pass
 
 
 class GroupRead(GroupBase, BaseOrmModel):
-    """Schema for returning group data in responses."""
-
     id: UUID
     members: list[UUID] = Field(default_factory=list)
 
-    model_config = ConfigDict(from_attributes=True)
-
 
 class ExpenseBase(BaseModel):
-    """Shared expense fields."""
-
     group_id: UUID
     payer_id: UUID
     amount: condecimal(gt=Decimal("0"))
@@ -86,12 +68,10 @@ class ExpenseBase(BaseModel):
 
 
 class ExpenseCreate(ExpenseBase):
-    """Schema for creating a new expense."""
+    pass
 
 
 class ExpenseRead(ExpenseBase, BaseOrmModel):
-    """Schema for returning expense data; converts stored cents to dollars."""
-
     id: UUID
     amount: float = Field(...)
 
@@ -110,8 +90,6 @@ class ExpenseRead(ExpenseBase, BaseOrmModel):
 
 
 class BalanceEntry(BaseOrmModel):
-    """Schema for a single user's balance within a group."""
-
     user_id: UUID
     balance: float = Field(...)
 

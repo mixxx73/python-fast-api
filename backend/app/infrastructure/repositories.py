@@ -1,42 +1,33 @@
-"""Repository implementations: in-memory (for tests) and SQLAlchemy-backed."""
-
 from typing import Dict, Iterable, List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from ..domain.exceptions import ExpenseCreateError, UserExistsError
+from ..domain.exceptions import UserExistsError
 from ..domain.models import Expense, Group, User
 from ..domain.repositories import ExpenseRepository, GroupRepository, UserRepository
-from .orm import ExpenseORM, GroupORM, UserORM, group_members
+from .orm import ExpenseORM, GroupORM, UserORM
 
 
 class InMemoryUserRepository(UserRepository):
-    """In-memory user repository for unit tests."""
-
     def __init__(self) -> None:
         self.users: Dict[UUID, User] = {}
 
-    async def add(self, user: User) -> User:
+    async def add(self, user: User) -> None:
         self.users[user.id] = user
-        return user
 
     async def get(self, user_id: UUID) -> Optional[User]:
         return self.users.get(user_id)
 
 
 class InMemoryGroupRepository(GroupRepository):
-    """In-memory group repository for unit tests."""
-
     def __init__(self) -> None:
         self.groups: Dict[UUID, Group] = {}
 
-    async def add(self, group: Group) -> Group:
+    async def add(self, group: Group) -> None:
         self.groups[group.id] = group
-        return group
 
     async def add_member(self, group_id: UUID, user_id: UUID) -> None:
         group = self.groups[group_id]
@@ -52,38 +43,26 @@ class InMemoryGroupRepository(GroupRepository):
 
 
 class InMemoryExpenseRepository(ExpenseRepository):
-    """In-memory expense repository for unit tests."""
-
     def __init__(self) -> None:
         self.expenses: Dict[UUID, Expense] = {}
 
-    async def add(self, expense: Expense) -> Expense:
+    async def add(self, expense: Expense) -> None:
         self.expenses[expense.id] = expense
-        return expense
 
     async def list_for_group(self, group_id: UUID) -> Iterable[Expense]:
         return [e for e in self.expenses.values() if e.group_id == group_id]
 
 
 def _to_user_model(row: UserORM) -> User:
-    """Convert a UserORM row to a User domain model."""
-    return User(
-        id=row.id,
-        email=row.email,
-        name=row.name,
-        is_admin=row.is_admin,
-        password_hash=row.password_hash,
-    )
+    return User(id=row.id, email=row.email, name=row.name, is_admin=row.is_admin)
 
 
 def _to_group_model(row: GroupORM) -> Group:
-    """Convert a GroupORM row to a Group domain model."""
     member_ids: List[UUID] = [u.id for u in row.members]
     return Group(id=row.id, name=row.name, members=member_ids)
 
 
 def _to_expense_model(row: ExpenseORM) -> Expense:
-    """Convert an ExpenseORM row to an Expense domain model."""
     return Expense(
         id=row.id,
         group_id=row.group_id,
@@ -95,12 +74,10 @@ def _to_expense_model(row: ExpenseORM) -> Expense:
 
 
 class SQLAlchemyUserRepository(UserRepository):
-    """SQLAlchemy-backed user repository."""
-
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def add(self, user: User) -> User:
+    async def add(self, user: User) -> UserORM:
         try:
             row = UserORM(
                 id=user.id,
@@ -112,16 +89,13 @@ class SQLAlchemyUserRepository(UserRepository):
             self.db.add(row)
             await self.db.commit()
             await self.db.refresh(row)
-            return _to_user_model(row)
+            return row
         except IntegrityError as exc:
             await self.db.rollback()
             raise UserExistsError(f"Failed to create user {user.email}") from exc
 
-    async def get(self, user_id: UUID) -> Optional[User]:
-        row = await self.db.get(UserORM, user_id)
-        if not row:
-            return None
-        return _to_user_model(row)
+    async def get(self, user_id: UUID) -> Optional[UserORM]:
+        return await self.db.get(UserORM, user_id)
 
     # Extra helpers not in interface
     async def list_all(self) -> List[User]:
@@ -137,16 +111,13 @@ class SQLAlchemyUserRepository(UserRepository):
 
 
 class SQLAlchemyGroupRepository(GroupRepository):
-    """SQLAlchemy-backed group repository."""
-
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def add(self, group: Group) -> Group:
+    async def add(self, group: Group) -> None:
         row = GroupORM(id=group.id, name=group.name)
         self.db.add(row)
         await self.db.commit()
-        return Group(id=row.id, name=row.name, members=[])
 
     async def add_member(self, group_id: UUID, user_id: UUID) -> None:
         group = await self.db.get(GroupORM, group_id)
@@ -156,30 +127,20 @@ class SQLAlchemyGroupRepository(GroupRepository):
             await self.db.commit()
 
     async def list_for_user(self, user_id: UUID) -> List[Group]:
-        result = await self.db.execute(
-            select(GroupORM)
-            .join(group_members, GroupORM.id == group_members.c.group_id)
-            .where(group_members.c.user_id == user_id)
-            .options(selectinload(GroupORM.members))
-        )
-        return [_to_group_model(r) for r in result.scalars().all()]
+        user = await self.db.get(UserORM, user_id)
+        if not user:
+            return []
+        return [_to_group_model(g) for g in user.groups]
 
     # Extra helpers not in interface
     async def get(self, group_id: UUID) -> Optional[Group]:
-        result = await self.db.execute(
-            select(GroupORM)
-            .where(GroupORM.id == group_id)
-            .options(selectinload(GroupORM.members))
-        )
-        row = result.scalar_one_or_none()
+        row = await self.db.get(GroupORM, group_id)
         if not row:
             return None
         return _to_group_model(row)
 
     async def list_all(self) -> List[Group]:
-        result = await self.db.execute(
-            select(GroupORM).options(selectinload(GroupORM.members))
-        )
+        result = await self.db.execute(select(GroupORM))
         return [_to_group_model(r) for r in result.scalars().all()]
 
     async def update_name(self, _group_id: UUID, _name: str) -> None:
@@ -190,12 +151,10 @@ class SQLAlchemyGroupRepository(GroupRepository):
 
 
 class SQLAlchemyExpenseRepository(ExpenseRepository):
-    """SQLAlchemy-backed expense repository."""
-
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def add(self, expense: Expense) -> Expense:
+    async def add(self, expense: Expense) -> ExpenseORM:
         row = ExpenseORM(
             id=expense.id,
             group_id=expense.group_id,
@@ -204,19 +163,13 @@ class SQLAlchemyExpenseRepository(ExpenseRepository):
             created_at=expense.created_at,
             description=expense.description,
         )
-        try:
-            self.db.add(row)
-            await self.db.commit()
-            await self.db.refresh(row)
-        except IntegrityError as exc:
-            await self.db.rollback()
-            raise ExpenseCreateError("Failed to create expense") from exc
-        return _to_expense_model(row)
+        self.db.add(row)
+        await self.db.commit()
+        await self.db.refresh(row)
+        return row
 
     async def list_for_group(self, group_id: UUID) -> List[Expense]:
-        result = await self.db.execute(
-            select(ExpenseORM).where(ExpenseORM.group_id == group_id)
-        )
+        result = await self.db.execute(select(ExpenseORM).where(ExpenseORM.group_id == group_id))
         return [_to_expense_model(r) for r in result.scalars().all()]
 
     # Extra helpers not in interface

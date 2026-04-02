@@ -1,5 +1,3 @@
-"""OpenTelemetry tracing initialisation for FastAPI and SQLAlchemy."""
-
 import os
 from typing import Optional
 

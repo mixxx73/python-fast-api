@@ -1,5 +1,3 @@
-"""Abstract repository interfaces defining the persistence contract."""
-
 from abc import ABC, abstractmethod
 from typing import Iterable, Optional
 from uuid import UUID
@@ -8,10 +6,8 @@ from .models import Expense, Group, User
 
 
 class UserRepository(ABC):
-    """Abstract interface for user persistence."""
-
     @abstractmethod
-    async def add(self, user: User) -> User:
+    async def add(self, user: User) -> None:
         """Persist a new user."""
 
     @abstractmethod
@@ -20,10 +16,8 @@ class UserRepository(ABC):
 
 
 class GroupRepository(ABC):
-    """Abstract interface for group persistence."""
-
     @abstractmethod
-    async def add(self, group: Group) -> Group:
+    async def add(self, group: Group) -> None:
         """Persist a new group."""
 
     @abstractmethod
@@ -42,10 +36,8 @@ class GroupRepository(ABC):
 
 
 class ExpenseRepository(ABC):
-    """Abstract interface for expense persistence."""
-
     @abstractmethod
-    async def add(self, expense: Expense) -> Expense:
+    async def add(self, expense: Expense) -> None:
         """Persist a new expense."""
 
     @abstractmethod
