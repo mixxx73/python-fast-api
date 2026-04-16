@@ -127,10 +127,16 @@ class SQLAlchemyGroupRepository(GroupRepository):
             await self.db.commit()
 
     async def list_for_user(self, user_id: UUID) -> List[Group]:
-        user = await self.db.get(UserORM, user_id)
-        if not user:
-            return []
-        return [_to_group_model(g) for g in user.groups]
+        # Load groups and their members in a single async query to avoid
+        # triggering lazy loads (which cause MissingGreenlet in async engines).
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+
+        result = await self.db.execute(
+            select(GroupORM).join(GroupORM.members).where(UserORM.id == user_id).options(selectinload(GroupORM.members))
+        )
+        groups = result.scalars().all()
+        return [_to_group_model(g) for g in groups]
 
     # Extra helpers not in interface
     async def get(self, group_id: UUID) -> Optional[Group]:

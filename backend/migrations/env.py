@@ -45,17 +45,44 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Use async engine when the URL uses an async driver (e.g. postgresql+asyncpg).
+    # This avoids "greenlet_spawn has not been called" errors when Alembic calls
+    # into SQLAlchemy async drivers.
+    from sqlalchemy.ext.asyncio import create_async_engine
+    import asyncio
 
-    with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+    url = config.get_main_option("sqlalchemy.url")
 
-        with context.begin_transaction():
-            context.run_migrations()
+    if url and url.startswith("postgresql+asyncpg"):
+        async_engine = create_async_engine(
+            url,
+            poolclass=pool.NullPool,
+            future=True,
+        )
+
+        def _run_migrations(connection):
+            context.configure(connection=connection, target_metadata=target_metadata)
+            with context.begin_transaction():
+                context.run_migrations()
+
+        async def do_run():
+            async with async_engine.connect() as connection:
+                await connection.run_sync(_run_migrations)
+
+        asyncio.run(do_run())
+    else:
+        # Fallback to the synchronous engine for non-async DB URLs
+        connectable = engine_from_config(
+            config.get_section(config.config_ini_section),
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
+
+        with connectable.connect() as connection:
+            context.configure(connection=connection, target_metadata=target_metadata)
+
+            with context.begin_transaction():
+                context.run_migrations()
 
 
 if context.is_offline_mode():
