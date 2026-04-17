@@ -13,6 +13,15 @@ export const Profile: React.FC = () => {
   const [groups, setGroups] = React.useState<GroupRead[] | null>(null);
   const [groupsError, setGroupsError] = React.useState<string | null>(null);
 
+  // Password change UI state moved to top to ensure hooks order is stable
+  const [showPwdForm, setShowPwdForm] = React.useState(false);
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [newPasswordRepeat, setNewPasswordRepeat] = React.useState('');
+  const [changingPwd, setChangingPwd] = React.useState(false);
+  const [pwdError, setPwdError] = React.useState<string | null>(null);
+  const [pwdSuccess, setPwdSuccess] = React.useState<string | null>(null);
+
   React.useEffect(() => {
     client
       .me()
@@ -73,6 +82,56 @@ export const Profile: React.FC = () => {
     }
   };
 
+  const startChangePassword = () => {
+    setShowPwdForm(true);
+    setPwdError(null);
+    setPwdSuccess(null);
+    setCurrentPassword('');
+    setNewPassword('');
+    setNewPasswordRepeat('');
+  };
+
+  const cancelChangePassword = () => {
+    setShowPwdForm(false);
+    setPwdError(null);
+    setPwdSuccess(null);
+    setCurrentPassword('');
+    setNewPassword('');
+    setNewPasswordRepeat('');
+  };
+
+  const submitChangePassword = async () => {
+    if (!user) return;
+    if (currentPassword.trim().length === 0) {
+      setPwdError('Current password is required');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPwdError('New password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== newPasswordRepeat) {
+      setPwdError('New passwords do not match');
+      return;
+    }
+
+    setChangingPwd(true);
+    setPwdError(null);
+    setPwdSuccess(null);
+    try {
+      await client.changePassword(user.id, currentPassword, newPassword);
+      setPwdSuccess('Password changed successfully');
+      setShowPwdForm(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setNewPasswordRepeat('');
+    } catch (e: any) {
+      setPwdError(e?.message || 'Failed to change password');
+    } finally {
+      setChangingPwd(false);
+    }
+  };
+
   return (
     <section style={{ marginTop: 16 }}>
       <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -128,6 +187,65 @@ export const Profile: React.FC = () => {
                   <li key={g.id}>{g.name || '(unnamed group)'}</li>
                 ))}
               </ul>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <strong>Change password</strong>
+          <div style={{ marginTop: 8 }}>
+            {!showPwdForm ? (
+              <div>
+                <button onClick={startChangePassword} style={{ padding: '6px 10px' }}>
+                  Change password
+                </button>
+                {pwdSuccess && <div style={{ color: 'green', marginTop: 8 }}>{pwdSuccess}</div>}
+              </div>
+            ) : (
+              <div>
+                {pwdError && <div style={{ color: 'red', marginBottom: 8 }}>{pwdError}</div>}
+                <div style={{ marginBottom: 8 }}>
+                  <input
+                    type="password"
+                    placeholder="Current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    disabled={changingPwd}
+                    style={{ width: '100%', marginBottom: 6 }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="New password (min 8 chars)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={changingPwd}
+                    style={{ width: '100%', marginBottom: 6 }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Repeat new password"
+                    value={newPasswordRepeat}
+                    onChange={(e) => setNewPasswordRepeat(e.target.value)}
+                    disabled={changingPwd}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div>
+                  {newPassword && newPasswordRepeat && newPassword !== newPasswordRepeat && (
+                    <div style={{ color: 'red', marginBottom: 8 }}>Passwords do not match</div>
+                  )}
+                  <button
+                    onClick={submitChangePassword}
+                    disabled={changingPwd || newPassword.length < 8 || newPassword !== newPasswordRepeat}
+                    style={{ marginRight: 8 }}
+                  >
+                    {changingPwd ? 'Changing…' : 'Change password'}
+                  </button>
+                  <button onClick={cancelChangePassword} disabled={changingPwd}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

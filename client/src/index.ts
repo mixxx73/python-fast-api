@@ -169,6 +169,27 @@ export class ExpenseClient {
     return (await res.json()) as GroupRead[];
   }
 
+  async changePassword(userId: string, current_password: string, new_password: string): Promise<void> {
+    const payload = { current_password, new_password };
+    const res = await fetch(`${this.options.baseUrl}/users/${userId}/password`, {
+      method: "POST",
+      headers: this.headers(true),
+      body: JSON.stringify(payload),
+    });
+
+    if (res.status === 204) {
+      return;
+    }
+
+    let message = `Failed to change password (${res.status})`;
+    try {
+      const data = await res.json();
+      if (typeof data?.detail === 'string') message = data.detail;
+    } catch {}
+
+    throw new Error(message);
+  }
+
   async createGroup(name: string): Promise<GroupRead> {
     const payload: GroupCreate = { name };
     const res = await fetch(`${this.options.baseUrl}/groups/`, {

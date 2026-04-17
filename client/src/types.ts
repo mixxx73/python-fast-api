@@ -53,3 +53,8 @@ export interface ExpenseCreate {
   amount: number;
   description?: string | null;
 }
+
+export interface PasswordChange {
+  current_password: string;
+  new_password: string;
+}

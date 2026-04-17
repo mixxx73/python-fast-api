@@ -36,6 +36,14 @@ class UserUpdate(BaseModel):
     name: Optional[constr(min_length=1, max_length=255)] = None
 
 
+class PasswordChange(BaseModel):
+    """Schema for changing a user's password.
+
+    Requires the current password for verification and a new password.
+    """
+    current_password: constr(min_length=8)
+    new_password: constr(min_length=8)
+
 class UserRead(UserBase, BaseOrmModel):
     id: UUID
     is_admin: bool = False
